@@ -1,0 +1,26 @@
+{
+  "auth": {
+    "user_pool_id": "us-east-1_sandbox",
+    "aws_region": "us-east-1",
+    "user_pool_client_id": "sandboxclientid",
+    "identity_pool_id": "us-east-1:00000000-0000-0000-0000-000000000000",
+    "standard_required_attributes": ["email"],
+    "username_attributes": ["email"],
+    "user_verification_types": ["email"],
+    "password_policy": {
+      "min_length": 8,
+      "require_numbers": true,
+      "require_lowercase": true,
+      "require_uppercase": true,
+      "require_symbols": true
+    },
+    "unauthenticated_identities_enabled": true
+  },
+  "data": {
+    "aws_region": "us-east-1",
+    "url": "https://placeholder.appsync-api.us-east-1.amazonaws.com/graphql",
+    "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
+    "authorization_types": ["AWS_IAM"]
+  },
+  "version": "1.3"
+}

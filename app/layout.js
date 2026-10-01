@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ConfigureAmplifyClientSide from "@/components/ConfigureAmplifyClientSide";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +24,10 @@ export default function RootLayout({ children }) {
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-[#080b12] text-slate-100">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#080b12] text-slate-100">
+        <ConfigureAmplifyClientSide />
+        {children}
+      </body>
     </html>
   );
 }
