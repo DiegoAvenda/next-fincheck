@@ -1,25 +1,17 @@
 'use client';
 
 import React from 'react';
-import { 
-  Plus, 
-  TrendingUp, 
-  Layers, 
-  Receipt, 
-  PieChart, 
-  Sparkles, 
-  Cloud, 
-  CloudCheck,
-  Calendar,
-  RotateCcw
-} from 'lucide-react';
+import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, Database } from 'lucide-react';
+
+import UserMenu from './UserMenu';
 
 export default function Navbar({ 
   activeTab, 
   setActiveTab, 
   onOpenAddModal, 
-  onOpenAmplifyModal, 
+  onOpenBackendModal,
   onResetData,
+  user,
   period,
   setPeriod,
   alertsCount = 0
@@ -101,19 +93,23 @@ export default function Navbar({
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* AWS Amplify Ready Pill */}
+            {/* MongoDB / Better Auth pill */}
             <button
-              onClick={onOpenAmplifyModal}
-              title="AWS Amplify Ready (Cognito + DynamoDB)"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+              type="button"
+              onClick={onOpenBackendModal}
+              title="Better Auth + MongoDB"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
-              <Cloud className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">AWS Amplify</span>
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span>MongoDB</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
 
+            <UserMenu user={user} onOpenBackendModal={onOpenBackendModal} />
+
             {/* Quick Add Button */}
             <button
+              type="button"
               onClick={onOpenAddModal}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
             >

@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['@aws-crypto'],
+  // The MongoDB driver loads native/optional dependencies at runtime, so it must
+  // stay outside the server bundle.
+  serverExternalPackages: ['mongodb'],
 };
 
 export default nextConfig;

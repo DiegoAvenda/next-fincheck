@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# FinCheck
 
-## Getting Started
+Web app de finanzas personales: registro de gastos e ingresos, desglose por
+categoría, alertas de presupuesto, regla 50/30/20 y recomendaciones de ahorro e
+inversión.
 
-First, run the development server:
+## Stack
+
+| Capa | Tecnología |
+| --- | --- |
+| Framework | Next.js 16 (App Router) + React 19 |
+| Autenticación | [Better Auth](https://better-auth.com) con proveedor **Google** |
+| Base de datos | **MongoDB** (driver oficial, sin ORM) |
+| Estado en cliente | Zustand |
+| Estilos | Tailwind CSS 4 |
+
+> Antes de esta versión el proyecto usaba AWS Amplify Gen 2 (Amazon Cognito +
+DynamoDB/AppSync). Ese backend fue sustituido por completo por Better Auth +
+MongoDB.
+
+## Puesta en marcha
+
+### 1. Variables de entorno
+
+Copia `.env.example` a `.env.local` y completa los valores:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```dotenv
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=<genera uno con: node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))">
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+MONGODB_URI=mongodb://127.0.0.1:27017/fincheck
+MONGODB_DB_NAME=fincheck
+MONGODB_TRANSACTIONS=false
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
 
-## Learn More
+### 2. MongoDB
 
-To learn more about Next.js, take a look at the following resources:
+- **Local:** instala MongoDB Community y usa `mongodb://127.0.0.1:27017/fincheck`.
+  Si tu servidor no corre como *replica set*, deja `MONGODB_TRANSACTIONS=false`.
+- **Atlas (sin instalar nada):** crea un clúster gratuito y pega la cadena
+  `mongodb+srv://...` en `MONGODB_URI`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Las colecciones se crean solas en el primer uso y los índices
+(`transactions` por `userId + id`, `budgets` por `userId`) se generan
+automáticamente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Credenciales de Google
 
-## Deploy on Vercel
+1. Entra a [Google Cloud Console → Credenciales](https://console.cloud.google.com/apis/credentials).
+2. Crea una **ID de cliente de OAuth** de tipo *Aplicación web*.
+3. Agrega los *URIs de redireccionamiento autorizados*:
+   - `http://localhost:3000/api/auth/callback/google`
+   - `https://TU-DOMINIO/api/auth/callback/google`
+4. Copia el *Client ID* y el *Client Secret* en `GOOGLE_CLIENT_ID` y
+   `GOOGLE_CLIENT_SECRET`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Ejecutar
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm install
+pnpm dev
+```
+
+Abre [http://localhost:3000](http://localhost:3000) e inicia sesión con Google.
+
+## Arquitectura
+
+```
+app/
+  api/auth/[...all]/route.js   → endpoints de Better Auth (login, callback, session, logout)
+  api/bootstrap/route.js       → carga (y siembra) los datos del usuario
+  api/transactions/route.js    → crear/actualizar y borrar transacciones
+  api/budgets/route.js         → guardar presupuestos
+  api/data/reset/route.js      → restaurar el conjunto demo
+  page.js                      → dashboard (protegido por sesión)
+lib/
+  auth.js                      → configuración de Better Auth (Google + adaptador MongoDB)
+  auth-client.js               → cliente de Better Auth para React
+  mongodb.js                   → cliente MongoDB cacheado + índices
+  server/finance.js            → repositorio de transacciones/presupuestos
+  apiClient.js                 → fetch tipado contra las rutas /api
+  store.js                     → estado compartido (Zustand)
+components/
+  LoginView.jsx                → pantalla de acceso con Google
+  UserMenu.jsx                 → menú de cuenta y cierre de sesión
+  BackendModal.jsx             → documentación de la arquitectura y export de datos
+```
+
+### Modelo de datos
+
+```
+transactions  { userId, id, description, amount, type, category, date, paymentMethod, notes }
+budgets       { userId, values: { [categoría]: monthlyLimit } }
+```
+
+Todos los documentos se filtran por `userId` (el id del usuario de Better Auth),
+así que cada cuenta solo ve y modifica su propia información.

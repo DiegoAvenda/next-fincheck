@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConfigureAmplifyClientSide from "@/components/ConfigureAmplifyClientSide";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,8 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "FinCheck | Control de Finanzas, Presupuestos e Inversión",
-  description: "Web app para el control de finanzas personales: registro de gastos e ingresos, desglose por categoría, alertas de presupuesto, y recomendaciones inteligentes de ahorro e inversión. Lista para desplegar en AWS Amplify con Amazon Cognito y DynamoDB.",
-  keywords: ["finanzas personales", "control de gastos", "presupuesto", "ahorro", "inversión", "AWS Amplify", "DynamoDB", "Cognito"],
+  description: "Web app para el control de finanzas personales: registro de gastos e ingresos, desglose por categoría, alertas de presupuesto, y recomendaciones inteligentes de ahorro e inversión. Autenticación con Google vía Better Auth y datos en MongoDB.",
+  keywords: ["finanzas personales", "control de gastos", "presupuesto", "ahorro", "inversión", "Better Auth", "MongoDB", "Google"],
 };
 
 export default function RootLayout({ children }) {
@@ -25,7 +24,6 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#080b12] text-slate-100">
-        <ConfigureAmplifyClientSide />
         {children}
       </body>
     </html>
