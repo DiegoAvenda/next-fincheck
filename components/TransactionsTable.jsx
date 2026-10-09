@@ -22,6 +22,7 @@ export default function TransactionsTable({
   onOpenAddModal,
   onEditTransaction,
   onDeleteTransaction,
+  isDemoMode = false,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all' | 'expense' | 'income'
@@ -111,13 +112,15 @@ export default function TransactionsTable({
             <span>Exportar CSV</span>
           </button>
 
-          <button
-            onClick={onOpenAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition-all active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Nueva Transacción</span>
-          </button>
+          {!isDemoMode && (
+            <button
+              onClick={onOpenAddModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition-all active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Nueva Transacción</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -269,24 +272,31 @@ export default function TransactionsTable({
                     {/* Actions */}
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => onEditTransaction(tx)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                          title="Editar transacción"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`¿Eliminar "${tx.description}"?`)) {
-                              onDeleteTransaction(tx.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          title="Eliminar registro"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!isDemoMode && (
+                          <>
+                            <button
+                              onClick={() => onEditTransaction(tx)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                              title="Editar transacción"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`¿Eliminar "${tx.description}"?`)) {
+                                  onDeleteTransaction(tx.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                              title="Eliminar registro"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                        {isDemoMode && (
+                          <span className="text-xs text-slate-500 italic">Modo demo</span>
+                        )}
                       </div>
                     </td>
                   </tr>

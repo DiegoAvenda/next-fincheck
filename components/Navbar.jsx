@@ -1,17 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, Database } from 'lucide-react';
+import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, Database, LogIn } from 'lucide-react';
 
 import UserMenu from './UserMenu';
+import { authClient, signIn } from '../lib/auth-client';
 
-export default function Navbar({ 
-  activeTab, 
-  setActiveTab, 
-  onOpenAddModal, 
+export default function Navbar({
+  activeTab,
+  setActiveTab,
+  onOpenAddModal,
   onOpenBackendModal,
   onResetData,
   user,
+  isDemoMode = false,
   period,
   setPeriod,
   alertsCount = 0
@@ -105,17 +107,32 @@ export default function Navbar({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
 
-            <UserMenu user={user} onOpenBackendModal={onOpenBackendModal} />
+            {isDemoMode ? (
+              <button
+                type="button"
+                onClick={() => {
+                  signIn.social({ provider: 'google', callbackURL: '/' });
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/25 transition-all active:scale-95"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">Iniciar Sesión</span>
+              </button>
+            ) : (
+              <>
+                <UserMenu user={user} onOpenBackendModal={onOpenBackendModal} />
 
-            {/* Quick Add Button */}
-            <button
-              type="button"
-              onClick={onOpenAddModal}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline">Nuevo Registro</span>
-            </button>
+                {/* Quick Add Button */}
+                <button
+                  type="button"
+                  onClick={onOpenAddModal}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span className="hidden sm:inline">Nuevo Registro</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

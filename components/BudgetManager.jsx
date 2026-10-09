@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CategoryIcon from './CategoryIcon';
 import { EXPENSE_CATEGORIES } from '../lib/constants';
 import { 
@@ -19,12 +19,20 @@ export default function BudgetManager({
   onSaveBudgets,
   categoryBreakdown,
   totals,
-  onOpenAddModal
+  onOpenAddModal,
+  isDemoMode = false
 }) {
   const [localBudgets, setLocalBudgets] = useState({ ...budgets });
   const [hasChanges, setHasChanges] = useState(false);
   const [emergencyMonthsTarget, setEmergencyMonthsTarget] = useState(3);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Sync local budgets when parent budgets change (and not in demo mode)
+  useEffect(() => {
+    if (!isDemoMode) {
+      setLocalBudgets({ ...budgets });
+    }
+  }, [budgets, isDemoMode]);
 
   const handleBudgetChange = (catId, value) => {
     const num = Math.max(0, parseFloat(value) || 0);
@@ -32,11 +40,14 @@ export default function BudgetManager({
       ...prev,
       [catId]: num
     }));
-    setHasChanges(true);
-    setSaveSuccess(false);
+    if (!isDemoMode) {
+      setHasChanges(true);
+      setSaveSuccess(false);
+    }
   };
 
   const handleSave = () => {
+    if (isDemoMode) return;
     onSaveBudgets(localBudgets);
     setHasChanges(false);
     setSaveSuccess(true);
@@ -44,6 +55,7 @@ export default function BudgetManager({
   };
 
   const handleResetDefaults = () => {
+    if (isDemoMode) return;
     const defaults = {};
     EXPENSE_CATEGORIES.forEach(c => {
       defaults[c.id] = c.defaultBudget;
@@ -77,7 +89,7 @@ export default function BudgetManager({
           </div>
 
           <div className="flex items-center gap-3">
-            {hasChanges && (
+            {!isDemoMode && hasChanges && (
               <button
                 onClick={handleResetDefaults}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-slate-800 transition-colors"
@@ -89,16 +101,23 @@ export default function BudgetManager({
 
             <button
               onClick={handleSave}
-              disabled={!hasChanges && !saveSuccess}
+              disabled={isDemoMode || (!hasChanges && !saveSuccess)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
-                saveSuccess
+                isDemoMode
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : saveSuccess
                   ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20'
                   : hasChanges
                   ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }`}
             >
-              {saveSuccess ? (
+              {isDemoMode ? (
+                <>
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Modo Demo</span>
+                </>
+              ) : saveSuccess ? (
                 <>
                   <Check className="w-4 h-4" />
                   <span>¡Presupuesto Guardado!</span>
@@ -181,8 +200,11 @@ export default function BudgetManager({
               step="1"
               value={emergencyMonthsTarget}
               onChange={(e) => setEmergencyMonthsTarget(parseInt(e.target.value))}
+              disabled={isDemoMode}
               aria-label="Meses de cobertura de emergencia deseados"
-              className="w-full accent-indigo-500 h-2 bg-slate-800 rounded-lg cursor-pointer"
+              className={`w-full h-2 bg-slate-800 rounded-lg ${
+                isDemoMode ? 'cursor-not-allowed opacity-50' : 'accent-indigo-500 cursor-pointer'
+              }`}
             />
             <div className="flex justify-between text-[10px] text-slate-400 mt-1">
               <span>1 mes (mínimo)</span>
@@ -252,7 +274,12 @@ export default function BudgetManager({
                         step="10"
                         value={currentLimit}
                         onChange={(e) => handleBudgetChange(cat.id, e.target.value)}
-                        className="w-24 px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-right text-sm font-bold text-white focus:outline-none focus:border-indigo-500"
+                        disabled={isDemoMode}
+                        className={`w-24 px-2 py-1 rounded-lg bg-slate-950 border text-right text-sm font-bold text-white focus:outline-none focus:border-indigo-500 ${
+                          isDemoMode
+                            ? 'border-slate-700 text-slate-500 cursor-not-allowed'
+                            : 'border-slate-800'
+                        }`}
                       />
                     </div>
                   </div>

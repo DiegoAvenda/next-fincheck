@@ -12,7 +12,7 @@ import FinancialAdvisor from '../components/FinancialAdvisor';
 import BackendModal from '../components/BackendModal';
 import LoginView from '../components/LoginView';
 
-import { authClient } from '../lib/auth-client';
+import { authClient, signIn } from '../lib/auth-client';
 import { useFinStore } from '../lib/store';
 import {
   calculateTotals,
@@ -22,7 +22,8 @@ import {
   calculateHealthScore,
   generateSmartAdvice,
 } from '../lib/financeCalculations';
-import { RotateCcw, Sparkles, Database, ArrowRight, CloudOff, Loader2 } from 'lucide-react';
+import { RotateCcw, Sparkles, Database, ArrowRight, CloudOff, Loader2, LogIn } from 'lucide-react';
+import { INITIAL_TRANSACTIONS, INITIAL_BUDGETS } from '../lib/constants';
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
@@ -41,6 +42,10 @@ export default function Home() {
   const syncError = useFinStore((state) => state.error);
   const initStore = useFinStore((state) => state.init);
   const clearStore = useFinStore((state) => state.clear);
+
+  // Demo data for non-authenticated users
+  const demoTransactions = useMemo(() => INITIAL_TRANSACTIONS, []);
+  const demoBudgets = useMemo(() => INITIAL_BUDGETS, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -73,11 +78,14 @@ export default function Home() {
     await useFinStore.getState().resetData();
   };
 
-  // Derived calculations
-  const totals = useMemo(() => calculateTotals(transactions), [transactions]);
+  // Derived calculations - use demo data when not authenticated
+  const displayTransactions = user ? transactions : demoTransactions;
+  const displayBudgets = user ? budgets : demoBudgets;
+
+  const totals = useMemo(() => calculateTotals(displayTransactions), [displayTransactions]);
   const categoryBreakdown = useMemo(
-    () => calculateCategoryBreakdown(transactions, budgets),
-    [transactions, budgets],
+    () => calculateCategoryBreakdown(displayTransactions, displayBudgets),
+    [displayTransactions, displayBudgets],
   );
   const alerts = useMemo(() => calculateBudgetAlerts(categoryBreakdown), [categoryBreakdown]);
   const rule503020 = useMemo(
@@ -105,12 +113,8 @@ export default function Home() {
     );
   }
 
-  // Not signed in yet
-  if (!user) {
-    return <LoginView />;
-  }
-
-  const isLoadingData = status === 'loading' || status === 'idle';
+  const isLoadingData = user && (status === 'loading' || status === 'idle');
+  const isDemoMode = !user;
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -118,6 +122,7 @@ export default function Home() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         user={user}
+        isDemoMode={isDemoMode}
         onOpenAddModal={() => {
           setEditingTransaction(null);
           setIsAddModalOpen(true);
@@ -128,6 +133,28 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {isDemoMode && (
+          <div className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-sm">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Modo Demostración</p>
+                <p className="text-xs text-indigo-200/80 mt-0.5">Explora el dashboard con datos de ejemplo</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition-colors"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Iniciar Sesión</span>
+            </button>
+          </div>
+        )}
+
         {syncError && (
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm">
             <CloudOff className="w-5 h-5 shrink-0 mt-0.5" />
@@ -205,13 +232,14 @@ export default function Home() {
                   </div>
 
                   <TransactionsTable
-                    transactions={transactions.slice(0, 5)}
+                    transactions={displayTransactions.slice(0, 5)}
                     onOpenAddModal={() => {
                       setEditingTransaction(null);
                       setIsAddModalOpen(true);
                     }}
                     onEditTransaction={handleEditTransaction}
                     onDeleteTransaction={handleDeleteTransaction}
+                    isDemoMode={isDemoMode}
                   />
                 </div>
               </div>
@@ -220,13 +248,14 @@ export default function Home() {
             {activeTab === 'transactions' && (
               <div className="animate-in fade-in duration-300">
                 <TransactionsTable
-                  transactions={transactions}
+                  transactions={displayTransactions}
                   onOpenAddModal={() => {
                     setEditingTransaction(null);
                     setIsAddModalOpen(true);
                   }}
                   onEditTransaction={handleEditTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
+                  isDemoMode={isDemoMode}
                 />
               </div>
             )}
@@ -234,7 +263,7 @@ export default function Home() {
             {activeTab === 'budgets' && (
               <div className="animate-in fade-in duration-300">
                 <BudgetManager
-                  budgets={budgets}
+                  budgets={displayBudgets}
                   onSaveBudgets={handleSaveBudgets}
                   categoryBreakdown={categoryBreakdown}
                   totals={totals}
@@ -242,6 +271,7 @@ export default function Home() {
                     setEditingTransaction(null);
                     setIsAddModalOpen(true);
                   }}
+                  isDemoMode={isDemoMode}
                 />
               </div>
             )}
@@ -293,15 +323,17 @@ export default function Home() {
         </div>
       </footer>
 
-      <TransactionModal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setEditingTransaction(null);
-        }}
-        onSave={handleSaveTransaction}
-        editingTransaction={editingTransaction}
-      />
+      {!isDemoMode && (
+        <TransactionModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingTransaction(null);
+          }}
+          onSave={handleSaveTransaction}
+          editingTransaction={editingTransaction}
+        />
+      )}
 
       <BackendModal isOpen={isBackendModalOpen} onClose={() => setIsBackendModalOpen(false)} />
     </div>
