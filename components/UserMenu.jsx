@@ -111,7 +111,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
               className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Arquitectura y MongoDB</span>
+              <span>Mis datos y exportación</span>
             </button>
 
             <button

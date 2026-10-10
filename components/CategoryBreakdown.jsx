@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import CategoryIcon from './CategoryIcon';
 import { AlertTriangle, CheckCircle, PieChart, Sparkles } from 'lucide-react';
 
@@ -10,25 +10,25 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
   // Filter only categories with spending for the chart
   const activeSpendings = categoryBreakdown.filter((cat) => cat.spent > 0);
 
-  // Compute SVG Donut Chart Slices
+  // Compute SVG Donut Chart Slices (offsets derived, no render-time mutation)
   const radius = 70;
   const strokeWidth = 26;
   const circumference = 2 * Math.PI * radius;
-  let accumulatedOffset = 0;
 
-  const slices = activeSpendings.map((cat) => {
-    const fraction = totalExpense > 0 ? cat.spent / totalExpense : 0;
-    const strokeDasharray = `${fraction * circumference} ${circumference}`;
-    const strokeDashoffset = -accumulatedOffset;
-    accumulatedOffset += fraction * circumference;
-
-    return {
-      ...cat,
-      fraction,
-      strokeDasharray,
-      strokeDashoffset,
-    };
-  });
+  const slices = useMemo(() => {
+    return activeSpendings.map((cat, index) => {
+      const fraction = totalExpense > 0 ? cat.spent / totalExpense : 0;
+      const offset = activeSpendings
+        .slice(0, index)
+        .reduce((sum, prev) => sum + (totalExpense > 0 ? prev.spent / totalExpense : 0) * circumference, 0);
+      return {
+        ...cat,
+        fraction,
+        strokeDasharray: `${fraction * circumference} ${circumference}`,
+        strokeDashoffset: -offset,
+      };
+    });
+  }, [activeSpendings, totalExpense, circumference]);
 
   const selectedOrTop = activeCategory
     ? categoryBreakdown.find((c) => c.id === activeCategory)
@@ -181,7 +181,7 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
                       ${cat.spent.toLocaleString()}
                     </span>
                     <span className="text-xs text-slate-400 block">
-                      de ${cat.budget.toLocaleString()} límit.
+                      de ${cat.budget.toLocaleString('es-MX')} límite.
                     </span>
                   </div>
                 </div>

@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/bootstrap
- * Returns every transaction and budget for the signed-in user, seeding the
- * demo dataset the first time the account is used.
+ * Returns every transaction and budget for the signed-in user.
+ * New accounts start empty (demo data only exists locally, without login).
  */
 export async function GET(request) {
   const { userId, response } = await requireUser(request);

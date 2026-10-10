@@ -75,11 +75,10 @@ Abre [http://localhost:3000](http://localhost:3000) e inicia sesión con Google.
 ```
 app/
   api/auth/[...all]/route.js   → endpoints de Better Auth (login, callback, session, logout)
-  api/bootstrap/route.js       → carga (y siembra) los datos del usuario
+  api/bootstrap/route.js       → carga los datos del usuario (la cuenta nueva arranca vacía)
   api/transactions/route.js    → crear/actualizar y borrar transacciones
   api/budgets/route.js         → guardar presupuestos
-  api/data/reset/route.js      → restaurar el conjunto demo
-  page.js                      → dashboard (protegido por sesión)
+  page.js                      → dashboard (demo local sin login, datos reales con sesión)
 lib/
   auth.js                      → configuración de Better Auth (Google + adaptador MongoDB)
   auth-client.js               → cliente de Better Auth para React
@@ -90,7 +89,7 @@ lib/
 components/
   LoginView.jsx                → pantalla de acceso con Google
   UserMenu.jsx                 → menú de cuenta y cierre de sesión
-  BackendModal.jsx             → documentación de la arquitectura y export de datos
+  BackendModal.jsx             → visor de datos del periodo y exportación
 ```
 
 ### Modelo de datos

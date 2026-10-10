@@ -10,9 +10,8 @@ import TransactionModal from '../components/TransactionModal';
 import BudgetManager from '../components/BudgetManager';
 import FinancialAdvisor from '../components/FinancialAdvisor';
 import BackendModal from '../components/BackendModal';
-import LoginView from '../components/LoginView';
 
-import { authClient, signIn } from '../lib/auth-client';
+import { authClient } from '../lib/auth-client';
 import { useFinStore } from '../lib/store';
 import {
   calculateTotals,
@@ -21,9 +20,27 @@ import {
   calculate503020,
   calculateHealthScore,
   generateSmartAdvice,
+  listMonths,
+  formatMonthES,
+  detectRecurring,
 } from '../lib/financeCalculations';
-import { RotateCcw, Sparkles, Database, ArrowRight, CloudOff, Loader2, LogIn } from 'lucide-react';
+import { RotateCcw, Sparkles, Database, ArrowRight, CloudOff, Loader2, LogIn, CalendarDays, Upload } from 'lucide-react';
 import { INITIAL_TRANSACTIONS, INITIAL_BUDGETS } from '../lib/constants';
+
+const DEMO_STORAGE_KEY = 'fincheck-demo-v2';
+
+function loadDemoState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed?.transactions) || typeof parsed?.budgets !== 'object') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
@@ -43,9 +60,23 @@ export default function Home() {
   const initStore = useFinStore((state) => state.init);
   const clearStore = useFinStore((state) => state.clear);
 
-  // Demo data for non-authenticated users
-  const demoTransactions = useMemo(() => INITIAL_TRANSACTIONS, []);
-  const demoBudgets = useMemo(() => INITIAL_BUDGETS, []);
+  // Demo data for non-authenticated users (editable, persisted in localStorage)
+  const [demoTransactions, setDemoTransactions] = useState(() => loadDemoState()?.transactions ?? INITIAL_TRANSACTIONS);
+  const [demoBudgets, setDemoBudgets] = useState(() => loadDemoState()?.budgets ?? INITIAL_BUDGETS);
+  const [migrateDismissed, setMigrateDismissed] = useState(false);
+  const [period, setPeriod] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        DEMO_STORAGE_KEY,
+        JSON.stringify({ transactions: demoTransactions, budgets: demoBudgets }),
+      );
+    } catch {
+      // localStorage lleno o bloqueado: el demo sigue funcionando en memoria.
+    }
+  }, [demoTransactions, demoBudgets]);
 
   useEffect(() => {
     if (user?.id) {
@@ -56,12 +87,25 @@ export default function Home() {
   }, [user?.id, isPending, initStore, clearStore]);
 
   const handleSaveTransaction = (transaction) => {
-    useFinStore.getState().addOrUpdateTransaction(transaction).catch(() => {});
+    if (!user) {
+      setDemoTransactions((prev) => {
+        const exists = prev.some((item) => item.id === transaction.id);
+        return exists
+          ? prev.map((item) => (item.id === transaction.id ? transaction : item))
+          : [transaction, ...prev];
+      });
+    } else {
+      useFinStore.getState().addOrUpdateTransaction(transaction).catch(() => {});
+    }
     setEditingTransaction(null);
   };
 
   const handleDeleteTransaction = (id) => {
-    useFinStore.getState().deleteTransaction(id).catch(() => {});
+    if (!user) {
+      setDemoTransactions((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      useFinStore.getState().deleteTransaction(id).catch(() => {});
+    }
   };
 
   const handleEditTransaction = (transaction) => {
@@ -70,17 +114,57 @@ export default function Home() {
   };
 
   const handleSaveBudgets = (newBudgets) => {
-    useFinStore.getState().setBudgets(newBudgets).catch(() => {});
+    if (!user) {
+      setDemoBudgets(newBudgets);
+    } else {
+      useFinStore.getState().setBudgets(newBudgets).catch(() => {});
+    }
   };
 
-  const handleResetData = async () => {
-    if (!confirm('¿Restablecer tus datos de FinCheck con el conjunto de demostración?')) return;
-    await useFinStore.getState().resetData();
+  // Demo-only: restores the static sample dataset (localStorage, never the DB).
+  const handleResetData = () => {
+    if (!confirm('¿Restablecer los datos de demostración? Se perderán tus cambios locales.')) return;
+    setDemoTransactions(INITIAL_TRANSACTIONS);
+    setDemoBudgets(INITIAL_BUDGETS);
+  };
+
+  const handleMigrateDemo = async () => {
+    setMigrateDismissed(true);
+    const saved = loadDemoState();
+    if (!saved) return;
+    for (const tx of saved.transactions) {
+      try {
+        await useFinStore.getState().addOrUpdateTransaction(tx);
+      } catch {
+        break;
+      }
+    }
+    try {
+      await useFinStore.getState().setBudgets(saved.budgets);
+    } catch {
+      // Si falla el guardado de presupuestos, las transacciones ya quedaron.
+    }
   };
 
   // Derived calculations - use demo data when not authenticated
-  const displayTransactions = user ? transactions : demoTransactions;
-  const displayBudgets = user ? budgets : demoBudgets;
+  const allTransactions = user ? transactions : demoTransactions;
+  const allBudgets = user ? budgets : demoBudgets;
+  const availableMonths = useMemo(() => listMonths(allTransactions), [allTransactions]);
+
+  const activePeriod = period && availableMonths.includes(period) ? period : (availableMonths[0] ?? null);
+  const displayTransactions = useMemo(() => {
+    if (!activePeriod) return allTransactions;
+    return allTransactions.filter((tx) => String(tx?.date ?? '').startsWith(activePeriod));
+  }, [allTransactions, activePeriod]);
+  const displayBudgets = allBudgets;
+  const previousPeriodTotals = useMemo(() => {
+    if (!activePeriod || availableMonths.length < 2) return null;
+    const idx = availableMonths.indexOf(activePeriod);
+    const prevKey = availableMonths[idx + 1];
+    if (!prevKey) return null;
+    const prevTx = allTransactions.filter((tx) => String(tx?.date ?? '').startsWith(prevKey));
+    return { key: prevKey, ...calculateTotals(prevTx) };
+  }, [allTransactions, activePeriod, availableMonths]);
 
   const totals = useMemo(() => calculateTotals(displayTransactions), [displayTransactions]);
   const categoryBreakdown = useMemo(
@@ -100,6 +184,17 @@ export default function Home() {
     () => generateSmartAdvice(totals, categoryBreakdown, rule503020, alerts),
     [totals, categoryBreakdown, rule503020, alerts],
   );
+  const recurring = useMemo(() => detectRecurring(allTransactions), [allTransactions]);
+  const expenseDelta = previousPeriodTotals
+    ? totals.totalExpense - previousPeriodTotals.totalExpense
+    : null;
+  const hasCustomDemo = useMemo(() => {
+    if (!user || migrateDismissed) return false;
+    return (
+      demoTransactions.length !== INITIAL_TRANSACTIONS.length ||
+      JSON.stringify(demoBudgets) !== JSON.stringify(INITIAL_BUDGETS)
+    );
+  }, [user, migrateDismissed, demoTransactions, demoBudgets]);
 
   // Session still resolving
   if (isPending) {
@@ -128,18 +223,19 @@ export default function Home() {
           setIsAddModalOpen(true);
         }}
         onOpenBackendModal={() => setIsBackendModalOpen(true)}
-        onResetData={handleResetData}
         alertsCount={alerts.totalCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {isDemoMode && (
-          <div className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-sm">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 shrink-0" />
               <div>
-                <p className="font-semibold">Modo Demostración</p>
-                <p className="text-xs text-indigo-200/80 mt-0.5">Explora el dashboard con datos de ejemplo</p>
+                <p className="font-semibold">Modo demostración editable</p>
+                <p className="text-xs text-indigo-200/80 mt-0.5">
+                  Puedes añadir, editar y borrar con datos de ejemplo. Se guardan en este navegador.
+                </p>
               </div>
             </div>
             <button
@@ -150,16 +246,89 @@ export default function Home() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition-colors"
             >
               <LogIn className="w-4 h-4" />
-              <span>Iniciar Sesión</span>
+              <span>Guardar en mi cuenta</span>
             </button>
           </div>
         )}
+
+        {user && hasCustomDemo && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-sm">
+            <div className="flex items-center gap-3">
+              <Upload className="w-5 h-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Tienes cambios del demo en este navegador</p>
+                <p className="text-xs text-emerald-200/80 mt-0.5">
+                  Impórtalos a tu cuenta o descártalos para quedarte con los datos de la nube.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMigrateDismissed(true)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-emerald-200 hover:bg-emerald-500/15 transition-colors"
+              >
+                Descartar
+              </button>
+              <button
+                type="button"
+                onClick={handleMigrateDemo}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors"
+              >
+                Importar demo
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Period toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-white/10 bg-slate-900/60">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-300 shrink-0">
+              <CalendarDays className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">
+                {activePeriod ? formatMonthES(activePeriod) : 'Sin movimientos'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {previousPeriodTotals && expenseDelta !== null ? (
+                  <>
+                    vs {formatMonthES(previousPeriodTotals.key)}:{' '}
+                    <span className={expenseDelta <= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                      {expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} en gastos
+                    </span>
+                  </>
+                ) : (
+                  'Presupuestos y alertas calculados sobre este mes'
+                )}
+              </p>
+            </div>
+          </div>
+          {availableMonths.length > 1 && (
+            <label className="flex items-center gap-2 text-xs text-slate-300">
+              <span className="text-slate-400">Periodo</span>
+              <select
+                value={activePeriod ?? ''}
+                onChange={(e) => setPeriod(e.target.value)}
+                aria-label="Seleccionar mes"
+                className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+              >
+                {availableMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMonthES(m)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         {syncError && (
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm">
             <CloudOff className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">No se pudo sincronizar con MongoDB</p>
+              <p className="font-semibold">No se pudo sincronizar tus datos</p>
               <p className="text-xs text-rose-200/80 mt-0.5">{syncError}</p>
             </div>
           </div>
@@ -168,10 +337,30 @@ export default function Home() {
         {isLoadingData ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <p className="text-sm font-medium">Cargando tus finanzas desde MongoDB...</p>
+            <p className="text-sm font-medium">Cargando tus finanzas...</p>
           </div>
         ) : (
           <>
+            {user && allTransactions.length === 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/5">
+                <div>
+                  <p className="text-sm font-bold text-white">Tu cuenta está en cero, como debe ser</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Los datos de prueba solo viven en el demo sin login. Registra tu primer movimiento para ver tus números reales.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTransaction(null);
+                    setIsAddModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shrink-0 transition-colors"
+                >
+                  Registrar mi primer movimiento
+                </button>
+              </div>
+            )}
             <AlertsBanner
               alerts={alerts}
               onNavigateToBudgets={() => setActiveTab('budgets')}
@@ -182,6 +371,8 @@ export default function Home() {
                 <OverviewCards
                   totals={totals}
                   healthScore={healthScore}
+                  periodLabel={activePeriod ? formatMonthES(activePeriod) : null}
+                  previousExpense={previousPeriodTotals?.totalExpense ?? null}
                   onOpenAdvisor={() => setActiveTab('advisor')}
                 />
 
@@ -190,6 +381,25 @@ export default function Home() {
                   totalExpense={totals.totalExpense}
                   onNavigateToBudgets={() => setActiveTab('budgets')}
                 />
+
+                {recurring.length > 0 && (
+                  <div className="glass-panel rounded-2xl p-5 border border-white/10">
+                    <h4 className="text-sm font-bold text-white">Posibles gastos recurrentes</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Detectados por repetirse en varios meses. Revísalos antes de renovar.
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {recurring.map((r) => (
+                        <div key={r.name} className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                          <p className="text-sm font-semibold text-white truncate">{r.name}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            ~${r.avgAmount.toLocaleString('es-MX')} · {r.months} {r.months === 1 ? 'mes' : 'meses'} · {r.category}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {smartAdvice.length > 0 && (
                   <div className="glass-panel rounded-2xl p-5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-slate-900">
@@ -239,7 +449,7 @@ export default function Home() {
                     }}
                     onEditTransaction={handleEditTransaction}
                     onDeleteTransaction={handleDeleteTransaction}
-                    isDemoMode={isDemoMode}
+                    isDemoMode={false}
                   />
                 </div>
               </div>
@@ -255,7 +465,7 @@ export default function Home() {
                   }}
                   onEditTransaction={handleEditTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
-                  isDemoMode={isDemoMode}
+                  isDemoMode={false}
                 />
               </div>
             )}
@@ -271,7 +481,7 @@ export default function Home() {
                     setEditingTransaction(null);
                     setIsAddModalOpen(true);
                   }}
-                  isDemoMode={isDemoMode}
+                  isDemoMode={false}
                 />
               </div>
             )}
@@ -305,37 +515,43 @@ export default function Home() {
               className="hover:text-emerald-400 flex items-center gap-1 transition-colors"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Better Auth + MongoDB</span>
+              <span>Mis datos y exportación</span>
             </button>
 
-            <span>•</span>
-
-            <button
-              type="button"
-              onClick={handleResetData}
-              className="hover:text-rose-400 flex items-center gap-1 transition-colors"
-              title="Restaurar datos de demostración"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Restablecer Demo</span>
-            </button>
+            {isDemoMode && (
+              <>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={handleResetData}
+                  className="hover:text-rose-400 flex items-center gap-1 transition-colors"
+                  title="Restaurar datos de demostración"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restablecer demo</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>
 
-      {!isDemoMode && (
-        <TransactionModal
-          isOpen={isAddModalOpen}
-          onClose={() => {
-            setIsAddModalOpen(false);
-            setEditingTransaction(null);
-          }}
-          onSave={handleSaveTransaction}
-          editingTransaction={editingTransaction}
-        />
-      )}
+      <TransactionModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingTransaction(null);
+        }}
+        onSave={handleSaveTransaction}
+        editingTransaction={editingTransaction}
+      />
 
-      <BackendModal isOpen={isBackendModalOpen} onClose={() => setIsBackendModalOpen(false)} />
+      <BackendModal
+        isOpen={isBackendModalOpen}
+        onClose={() => setIsBackendModalOpen(false)}
+        transactions={displayTransactions}
+        budgets={displayBudgets}
+      />
     </div>
   );
 }

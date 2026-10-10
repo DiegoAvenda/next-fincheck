@@ -15,6 +15,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
 
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional edit-form hydration */
   useEffect(() => {
     if (editingTransaction) {
       setType(editingTransaction.type || 'expense');
@@ -35,6 +36,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
     }
     setErrors({});
   }, [editingTransaction, isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // When type changes, adjust default category if needed
   const handleTypeChange = (newType) => {

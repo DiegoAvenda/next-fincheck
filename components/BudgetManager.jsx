@@ -26,11 +26,14 @@ export default function BudgetManager({
   const [hasChanges, setHasChanges] = useState(false);
   const [emergencyMonthsTarget, setEmergencyMonthsTarget] = useState(3);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savingsGoalPct, setSavingsGoalPct] = useState(20);
 
   // Sync local budgets when parent budgets change (and not in demo mode)
   useEffect(() => {
     if (!isDemoMode) {
+      /* eslint-disable react-hooks/set-state-in-effect -- intentional prop-to-form sync */
       setLocalBudgets({ ...budgets });
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [budgets, isDemoMode]);
 
@@ -70,6 +73,9 @@ export default function BudgetManager({
   const emergencyFundTarget = Math.round(monthlyBurn * emergencyMonthsTarget);
   const currentSavingsBuffer = Math.max(0, totals.netBalance);
   const currentRunwayMonths = (currentSavingsBuffer / monthlyBurn).toFixed(1);
+  const savingsRate = totals.savingsRate ?? 0;
+  const goalMet = savingsRate >= savingsGoalPct;
+  const goalMonthlyAmount = Math.round((totals.totalIncome || 0) * (savingsGoalPct / 100));
 
   return (
     <div className="space-y-6">
@@ -164,6 +170,44 @@ export default function BudgetManager({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Emergency Fund Calculator */}
+      <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="text-base font-bold text-white">Meta de ahorro mensual</h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Define tu objetivo y compáralo con tu tasa real de este periodo.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="text-slate-400">Meta</span>
+            <select
+              value={savingsGoalPct}
+              onChange={(e) => setSavingsGoalPct(Number(e.target.value))}
+              aria-label="Meta de ahorro mensual"
+              className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+            >
+              {[10, 15, 20, 25, 30, 40, 50].map((v) => (
+                <option key={v} value={v}>
+                  {v}%
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="mt-4 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${goalMet ? 'bg-emerald-400' : 'bg-amber-400'}`}
+            style={{ width: `${Math.min(100, savingsGoalPct > 0 ? (savingsRate / savingsGoalPct) * 100 : 0)}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-slate-300">
+          Llevas <strong className="text-white">{savingsRate}%</strong> de {savingsGoalPct}% (≈
+          ${goalMonthlyAmount.toLocaleString('es-MX')}/mes sobre tus ingresos).{' '}
+          {goalMet ? 'Meta cumplida.' : `Te faltan $${Math.max(0, goalMonthlyAmount - currentSavingsBuffer).toLocaleString('es-MX')} este mes.`}
+        </p>
       </div>
 
       {/* Emergency Fund Calculator */}

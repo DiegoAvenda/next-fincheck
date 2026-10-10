@@ -25,11 +25,20 @@ export default function FinancialAdvisor({
   totals,
   categoryBreakdown,
 }) {
-  // Compound Interest Simulator state
+  // Compound Interest Simulator state (prefilled from real surplus when available)
+  const suggestedInitial = Math.max(0, Math.round(totals?.netBalance ?? 0));
+  const suggestedMonthly = Math.max(0, Math.round(Math.max(totals?.netBalance ?? 0, (totals?.totalIncome ?? 0) * 0.1)));
   const [initialCapital, setInitialCapital] = useState(1000);
   const [monthlyContribution, setMonthlyContribution] = useState(250);
   const [annualRate, setAnnualRate] = useState(10);
   const [years, setYears] = useState(10);
+  const [usedSuggestion, setUsedSuggestion] = useState(false);
+
+  const applySuggestion = () => {
+    setInitialCapital(suggestedInitial);
+    setMonthlyContribution(suggestedMonthly > 0 ? suggestedMonthly : 250);
+    setUsedSuggestion(true);
+  };
 
   // Calculate compound growth
   const compoundResult = useMemo(() => {
@@ -52,14 +61,26 @@ export default function FinancialAdvisor({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-white tracking-tight">Asesor Financiero Inteligente</h3>
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                IA Engine
+              <h3 className="text-xl font-bold text-white tracking-tight">Asesor Financiero</h3>
+              <span
+                title="Diagnóstico automático con reglas sobre tus números. Sin IA externa."
+                className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+              >
+                Automático
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Diagnóstico de tu estructura de gasto, recomendaciones de optimización y proyecciones de inversión.
+              Diagnóstico de tu estructura de gasto con reglas transparentes, recomendaciones y proyección de ahorro.
             </p>
+            <details className="mt-2 text-xs text-slate-400">
+              <summary className="cursor-pointer text-indigo-300 hover:text-indigo-200">
+                ¿Cómo se calcula tu salud financiera?
+              </summary>
+              <p className="mt-1 leading-relaxed">
+                Parte de 100 y resta por balance negativo o ahorro bajo, por cada categoría excedida
+                y por alertas preventivas. Mínimo 15. Sin IA: son reglas fijas sobre tu balance y presupuestos.
+              </p>
+            </details>
           </div>
         </div>
       </div>
@@ -252,6 +273,14 @@ export default function FinancialAdvisor({
             <p className="text-xs text-slate-400 mt-0.5">
               Calcula cómo crece tu dinero al reinvertir rendimientos de forma constante.
             </p>
+            <button
+              type="button"
+              onClick={applySuggestion}
+              className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600/25 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-600/40 transition-colors"
+            >
+              Usar mi excedente actual (${suggestedInitial.toLocaleString('es-MX')} + ${suggestedMonthly.toLocaleString('es-MX')}/mes)
+              {usedSuggestion ? ' ✓' : ''}
+            </button>
           </div>
 
           {/* Quick rate presets */}

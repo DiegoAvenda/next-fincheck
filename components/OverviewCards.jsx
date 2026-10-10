@@ -13,8 +13,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
+export default function OverviewCards({ totals, healthScore, onOpenAdvisor, periodLabel, previousExpense }) {
   const isPositiveBalance = totals.netBalance >= 0;
+  const fmt = (n) => Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const expenseDelta = previousExpense !== null && previousExpense !== undefined
+    ? totals.totalExpense - previousExpense
+    : null;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -28,7 +32,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
         </div>
         <div className="mt-3">
           <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            ${totals.netBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${fmt(totals.netBalance)}
           </p>
           <div className="mt-2 flex items-center gap-1.5">
             <span
@@ -41,7 +45,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
               {isPositiveBalance ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
               {isPositiveBalance ? 'Superávit' : 'Déficit'}
             </span>
-            <span className="text-xs text-slate-400">este mes</span>
+            <span className="text-xs text-slate-400">{periodLabel ?? 'este mes'}</span>
           </div>
         </div>
         {/* Subtle accent glow */}
@@ -58,11 +62,11 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
         </div>
         <div className="mt-3">
           <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-400">
-            +${totals.totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            +${fmt(totals.totalIncome)}
           </p>
           <p className="mt-2 text-xs text-slate-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            Total acumulado
+            Total del periodo
           </p>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-emerald-600/10 blur-xl pointer-events-none" />
@@ -78,11 +82,13 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
         </div>
         <div className="mt-3">
           <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-rose-400">
-            -${totals.totalExpense.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            -${fmt(totals.totalExpense)}
           </p>
           <p className="mt-2 text-xs text-slate-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block"></span>
-            Salidas del periodo
+            {expenseDelta === null
+              ? 'Salidas del periodo'
+              : `${expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} vs mes anterior`}
           </p>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-rose-600/10 blur-xl pointer-events-none" />
@@ -122,6 +128,12 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor }) {
       {/* 5. Financial Health Score */}
       <div 
         onClick={onOpenAdvisor}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenAdvisor?.();
+          }
+        }}
         role="button"
         tabIndex={0}
         title="Ver diagnóstico financiero completo"

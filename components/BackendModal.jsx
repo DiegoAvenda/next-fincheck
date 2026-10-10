@@ -17,16 +17,20 @@ import {
 import { useFinStore } from '../lib/store';
 
 const TABS = [
-  { id: 'overview', label: 'Arquitectura' },
-  { id: 'schema', label: 'Colecciones MongoDB' },
-  { id: 'export', label: 'Exportar datos' },
+  { id: 'overview', label: 'Resumen' },
+  { id: 'schema', label: 'Mis datos' },
+  { id: 'export', label: 'Exportar' },
 ];
 
-export default function BackendModal({ isOpen, onClose }) {
+export default function BackendModal({ isOpen, onClose, transactions: propTransactions, budgets: propBudgets }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
-  const transactions = useFinStore((state) => state.transactions);
-  const budgets = useFinStore((state) => state.budgets);
+  const storeTransactions = useFinStore((state) => state.transactions);
+  const storeBudgets = useFinStore((state) => state.budgets);
+  // In demo mode (no session) the store is empty: the demo lives in static
+  // constants + localStorage, so the parent passes it explicitly.
+  const transactions = propTransactions ?? storeTransactions;
+  const budgets = propBudgets ?? storeBudgets;
 
   if (!isOpen) return null;
 
@@ -78,12 +82,12 @@ export default function BackendModal({ isOpen, onClose }) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">Better Auth + MongoDB</h3>
+                <h3 className="text-base font-bold text-white">Mis datos y exportación</h3>
                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Activo
+                  Sincronizado
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Autenticación con Google y datos por usuario</p>
+              <p className="text-xs text-slate-400">Tus movimientos, disponibles en tus dispositivos</p>
             </div>
           </div>
 
@@ -118,26 +122,22 @@ export default function BackendModal({ isOpen, onClose }) {
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
               <h4 className="font-bold text-white text-sm flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-amber-400" />
-                Better Auth con Google
+                Tu cuenta
               </h4>
               <p className="text-slate-300 mt-1 leading-relaxed">
-                Configurado en <code className="text-indigo-400">lib/auth.js</code> con el proveedor social de
-                Google y el adaptador de MongoDB. El endpoint{' '}
-                <code className="text-indigo-400">/api/auth/[...all]</code> expone todo el flujo OAuth
-                (inicio de sesión, callback y cierre de sesión).
+                Inicias sesión con Google. Tus movimientos quedan ligados solo a tu usuario y
+                se sincronizan entre tus dispositivos.
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
               <h4 className="font-bold text-white text-sm flex items-center gap-2">
                 <Database className="w-4 h-4 text-emerald-400" />
-                MongoDB como única base de datos
+                Dónde están tus datos
               </h4>
               <p className="text-slate-300 mt-1 leading-relaxed">
-                Sustituye a DynamoDB. Las transacciones y los presupuestos se guardan en las colecciones{' '}
-                <code className="text-indigo-400">transactions</code> y{' '}
-                <code className="text-indigo-400">budgets</code>, siempre filtradas por el{' '}
-                <code className="text-emerald-400">userId</code> de la sesión.
+                Se guardan en tu espacio privado en la nube, siempre separados por cuenta.
+                Puedes descargarlos o copiarlos cuando quieras desde la pestaña Exportar.
               </p>
             </div>
 
@@ -146,25 +146,15 @@ export default function BackendModal({ isOpen, onClose }) {
                 <Terminal className="w-4 h-4 text-cyan-400" />
                 Puesta en marcha
               </h4>
-              <div className="mt-2 space-y-2">
+              <div>
                 <div>
-                  <span className="text-slate-400">1. Define las variables de entorno (copia `.env.example`):</span>
-                  <pre className="mt-1 p-2 rounded bg-black/60 text-emerald-400 font-mono text-[11px] overflow-x-auto">
-                    MONGODB_URI / BETTER_AUTH_SECRET{'\n'}
-                    GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
-                  </pre>
+                  <span className="text-slate-400">1. Tus datos se guardan automáticamente al iniciar sesión.</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">2. Arranca la app:</span>
-                  <pre className="mt-1 p-2 rounded bg-black/60 text-emerald-400 font-mono text-[11px]">
-                    pnpm dev
-                  </pre>
+                  <span className="text-slate-400">2. Puedes exportarlos en CSV desde Transacciones o en JSON desde aquí.</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">3. Redirect URI en Google Cloud Console:</span>
-                  <pre className="mt-1 p-2 rounded bg-black/60 text-emerald-400 font-mono text-[11px] overflow-x-auto">
-                    http://localhost:3000/api/auth/callback/google
-                  </pre>
+                  <span className="text-slate-400">3. Al cerrar sesión en otro dispositivo, tus datos siguen intactos.</span>
                 </div>
               </div>
             </div>
@@ -174,8 +164,7 @@ export default function BackendModal({ isOpen, onClose }) {
         {activeTab === 'schema' && (
           <div className="mt-4 space-y-3 max-h-[420px] overflow-y-auto pr-1 text-xs">
             <p className="text-slate-300">
-              Colecciones creadas automáticamente en la base de datos configurada en{' '}
-              <code className="text-indigo-400">MONGODB_DB_NAME</code>:
+              Tus movimientos y presupuestos, listos para respaldar o analizar fuera de la app:
             </p>
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
               <span className="text-slate-500">{'// gestionadas por Better Auth'}</span>

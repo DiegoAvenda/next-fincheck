@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, Database, LogIn } from 'lucide-react';
+import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, HardDrive, LogIn } from 'lucide-react';
 
 import UserMenu from './UserMenu';
 import { authClient, signIn } from '../lib/auth-client';
@@ -11,7 +11,6 @@ export default function Navbar({
   setActiveTab,
   onOpenAddModal,
   onOpenBackendModal,
-  onResetData,
   user,
   isDemoMode = false,
   period,
@@ -31,9 +30,6 @@ export default function Navbar({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight text-white">FinCheck</span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Pro
-                </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">Control de Finanzas e Inversión</p>
             </div>
@@ -95,15 +91,15 @@ export default function Navbar({
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* MongoDB / Better Auth pill */}
+            {/* Mis datos pill */}
             <button
               type="button"
               onClick={onOpenBackendModal}
-              title="Better Auth + MongoDB"
+              title="Ver y exportar mis datos"
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>MongoDB</span>
+              <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Mis datos</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
 
