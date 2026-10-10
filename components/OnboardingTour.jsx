@@ -1,124 +1,193 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, ChevronRight, ChevronLeft, Check, HelpCircle, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { X, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+
+const TOUR_KEY = 'fincheck-tour-v2';
+
+/*
+ * Walkthrough guiado tipo spotlight.
+ * Cada paso puede anclarse a un elemento real vía `target` ([data-tour="..."]).
+ * El tour cambia a la pestaña del paso, recorta un spotlight sobre el elemento
+ * y posiciona el tooltip al lado. Sin el elemento: tooltip centrado (fallback).
+ */
 
 const ONBOARDING_STEPS = [
   {
     id: 'welcome',
     title: '¡Bienvenido a FinCheck!',
-    content: (
-      <div>
-        <p className="mb-3">Tu asistente de finanzas personales en español. Empezaremos con una breve capacitación.</p>
-        <div className="glass-panel rounded-xl p-4 border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <HelpCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-bold text-white">Sin IA, sin suscripciones</p>
-              <p className="text-xs text-slate-400 mt-0.5">Sin costos ocultos. Todos los cálculos son transparentes y auditables.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    description:
+      'Tu asistente de finanzas personales en español. Te mostramos un recorrido rápido por cada sección.',
+    cta: 'En este tour verás el dashboard, transacciones, presupuestos, asesor y cómo registrar movimientos.',
   },
   {
     id: 'dashboard',
-    target: 'dashboard',
+    tab: 'dashboard',
+    target: 'overview-cards',
     title: 'Tu Dashboard Financiero',
-    content: (
-      <div className="space-y-3">
-        <p>Los 5 cards muestran tu resumen financiero del mes:</p>
-        <ul className="text-xs text-slate-400 space-y-1.5 ml-4">
-          <li><strong className="text-white">Balance Neto</strong> - Tu dinero disponible</li>
-          <li><strong className="text-white">Ingresos</strong> - Dinero que recibes</li>
-          <li><strong className="text-white">Gastos</strong> - Dinero que gastas</li>
-          <li><strong className="text-white">Ahorro (%)</strong> - Cuánto ahorras del ingreso</li>
-          <li><strong className="text-white">Salud Financiera</strong> - Score de 0-100 basado en reglas</li>
-        </ul>
-      </div>
-    )
+    description:
+      'Estas 5 tarjetas son tu resumen del mes: balance neto, ingresos, gastos, tasa de ahorro y salud financiera (score de 0-100).',
+  },
+  {
+    id: 'transactions',
+    tab: 'transactions',
+    target: 'nav-transactions',
+    title: 'Transacciones',
+    description:
+      'Aquí viven todos tus movimientos. Puedes buscar, filtrar por tipo o categoría, exportar a CSV y registrar nuevos con el botón verde.',
   },
   {
     id: 'budgets',
-    target: 'budgets',
+    tab: 'budgets',
+    target: 'nav-budgets',
     title: 'Gestor de Presupuestos',
-    content: (
-      <div className="space-y-3">
-        <p>Establece topes para cada categoría y recibe alertas:</p>
-        <ul className="text-xs text-slate-400 space-y-1.5 ml-4">
-          <li><strong className="text-emerald-400">Verde:</strong> Dentro del presupuesto</li>
-          <li><strong className="text-amber-400">Ámbar:</strong> Cerca del límite (80%)</li>
-          <li><strong className="text-rose-500">Rojo:</strong> Excedido el presupuesto</li>
-        </ul>
-        <p className="mt-2 text-xs text-slate-300">Usa el cálculo de fondo de emergencia para saber cuánto necesitas ahorrar.</p>
-      </div>
-    )
+    description:
+      'Ponle un tope a cada categoría: verde dentro del presupuesto, ámbar cerca del límite (80%) y rojo si te pasas.',
   },
   {
     id: 'advisor',
-    target: 'advisor',
-    title: 'Asesor Financiero',
-    content: (
-      <div className="space-y-3">
-        <p>Nuestro asesor te da recomendaciones accionables de ahorro:</p>
-        <ul className="text-xs text-slate-400 space-y-1.5 ml-4">
-          <li><strong className="text-white">Regla 50/30/20</strong> - Distribución ideal de gastos</li>
-          <li><strong className="text-white">Fondo de emergencia</strong> - Cuánto necesitas ahorrar</li>
-          <li><strong className="text-white">Optimización de gastos</strong> - Detecta fugas de dinero</li>
-        </ul>
-        <p className="mt-2 text-xs text-indigo-300 bg-indigo-500/10 p-2 rounded">💡 Todas las recomendaciones usan reglas deterministas, no AI</p>
-      </div>
-    )
+    tab: 'advisor',
+    target: 'nav-advisor',
+    title: 'Asesor de Ahorro',
+    description:
+      'Diagnóstico con la regla 50/30/20, fondo de emergencia sugerido y consejos para detectar fugas. Todo con reglas transparentes, sin IA.',
   },
   {
     id: 'add-transaction',
+    tab: 'dashboard',
     target: 'add-transaction',
     title: 'Registrar Movimientos',
-    content: (
-      <div className="space-y-3">
-        <p>Categoría automática: escribe una descripción y te sugerimos la categoría correcta.</p>
-        <ul className="text-xs text-slate-400 space-y-1 ml-4">
-          <li><strong className="text-white">Ej. &quot;Gasolina&quot;</strong> → <span className="text-cyan-400">Transporte</span></li>
-          <li><strong className="text-white">Ej. &quot;Netflix&quot;</strong> → <span className="text-pink-400">Ocio y Salidas</span></li>
-          <li><strong className="text-white">Ej. &quot;Renta&quot;</strong> → <span className="text-blue-400">Vivienda</span></li>
-        </ul>
-      </div>
-    )
+    description:
+      'Con este botón registras gastos e ingresos. Si escribes "Gasolina" o "Netflix", te sugerimos la categoría automáticamente.',
   },
-  {
-    id: 'demo-mode',
-    title: 'Modo Demostración',
-    content: (
-      <div className="space-y-3">
-        <p>Sin iniciar sesión, puedes probar la app con datos de ejemplo editables.</p>
-        <div className="glass-panel rounded-xl p-4 border border-white/10">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-white">Modo demostración editable</p>
-              <p className="text-xs text-slate-400 mt-0.5">Puedes añadir, editar y borrar con datos de ejemplo. Se guardan en este navegador.</p>
-            </div>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-slate-300">Cuando inicies sesión con Google, tus datos se sincronizarán en la nube.</p>
-      </div>
-    )
-  }
 ];
 
-export default function OnboardingTour({ onComplete, onSkip }) {
-  const [currentStep, setCurrentStep] = useState(0);
+const TOOLTIP_W = 340;
+const TOOLTIP_H_EST = 260;
+const GAP = 12;
+
+function getSpotRect(target) {
+  if (typeof document === 'undefined' || !target) return null;
+  const candidates = Array.from(document.querySelectorAll(`[data-tour="${target}"]`));
+  const visible = candidates.find((el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  });
+  if (!visible) return null;
+  const r = visible.getBoundingClientRect();
+  const pad = 8;
+  return {
+    top: Math.max(8, r.top - pad),
+    left: Math.max(8, r.left - pad),
+    width: r.width + pad * 2,
+    height: r.height + pad * 2,
+  };
+}
+
+function placeTooltip(spot) {
+  if (!spot || typeof window === 'undefined') return { centered: true };
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = Math.min(TOOLTIP_W, vw - 32);
+  if (spot.top + spot.height + GAP + TOOLTIP_H_EST <= vh) {
+    return {
+      top: spot.top + spot.height + GAP,
+      left: Math.max(16, Math.min(spot.left, vw - w - 16)),
+      width: w,
+    };
+  }
+  if (spot.top - GAP - TOOLTIP_H_EST >= 8) {
+    return {
+      top: spot.top - GAP - TOOLTIP_H_EST,
+      left: Math.max(16, Math.min(spot.left, vw - w - 16)),
+      width: w,
+    };
+  }
+  if (spot.left + spot.width + GAP + w <= vw) {
+    return {
+      top: Math.max(16, Math.min(spot.top, vh - TOOLTIP_H_EST - 16)),
+      left: spot.left + spot.width + GAP,
+      width: w,
+    };
+  }
+  if (spot.left - GAP - w >= 8) {
+    return {
+      top: Math.max(16, Math.min(spot.top, vh - TOOLTIP_H_EST - 16)),
+      left: spot.left - GAP - w,
+      width: w,
+    };
+  }
+  return { centered: true };
+}
+
+export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
+  const [currentStep, setCurrentStep] = useState(() => {
+    // ?tour=N abre directo en ese paso (útil para probar). Fuera de rango = 0.
+    if (typeof window === 'undefined') return 0;
+    try {
+      const n = Number(new URLSearchParams(window.location.search).get('tour'));
+      if (Number.isInteger(n) && n >= 0 && n < ONBOARDING_STEPS.length) return n;
+    } catch {}
+    return 0;
+  });
+  const [spot, setSpot] = useState(null);
+  const [tooltip, setTooltip] = useState({ centered: true });
+  const step = ONBOARDING_STEPS[currentStep];
+  const isLast = currentStep === ONBOARDING_STEPS.length - 1;
+  const rafRef = useRef(0);
+
+  const measure = useCallback(() => {
+    const rect = getSpotRect(ONBOARDING_STEPS[currentStep].target);
+    setSpot(rect);
+    setTooltip(placeTooltip(rect));
+  }, [currentStep]);
+
+  // Cambiar de pestaña al entrar al paso + medir tras el render.
+  useEffect(() => {
+    const s = ONBOARDING_STEPS[currentStep];
+    if (s.tab && onGoToTab) onGoToTab(s.tab);
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(measure);
+    });
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [currentStep, measure, onGoToTab]);
+
+  // Scroll al objetivo + re-medir en resize/scroll.
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined' || !step.target) return undefined;
+    const el = document.querySelector(`[data-tour="${step.target}"]`);
+    if (el) {
+      try {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } catch {}
+    }
+    const onReposition = () => measure();
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
+    const t = setTimeout(measure, 350);
+    return () => {
+      window.removeEventListener('resize', onReposition);
+      window.removeEventListener('scroll', onReposition, true);
+      clearTimeout(t);
+    };
+  }, [step.target, measure]);
+
+  // Escape = omitir, flechas = navegar.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onSkip?.();
+      if (e.key === 'ArrowRight') setCurrentStep((c) => Math.min(c + 1, ONBOARDING_STEPS.length - 1));
+      if (e.key === 'ArrowLeft') setCurrentStep((c) => Math.max(c - 1, 0));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onSkip]);
 
   const handleNext = () => {
-    if (currentStep < ONBOARDING_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (!isLast) {
+      setCurrentStep((c) => c + 1);
     } else {
-      onComplete && onComplete();
+      onComplete?.();
     }
   };
 
@@ -128,43 +197,78 @@ export default function OnboardingTour({ onComplete, onSkip }) {
     }
   };
 
-  const step = ONBOARDING_STEPS[currentStep];
+  const tooltipStyle = tooltip.centered
+    ? {}
+    : { top: tooltip.top, left: tooltip.left, width: tooltip.width };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 shadow-2xl p-6 relative overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h3 className="text-lg font-bold text-white">
-            {step.title}
-          </h3>
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={step.title}>
+      {spot ? (
+        <>
+          {/* Overlay en 4 piezas dejando el "agujero" del spotlight */}
+          <div
+            className="absolute left-0 right-0 top-0 bg-black/70 backdrop-blur-[1px]"
+            style={{ height: spot.top }}
+          />
+          <div
+            className="absolute left-0 right-0 bg-black/70 backdrop-blur-[1px]"
+            style={{ top: spot.top + spot.height, bottom: 0 }}
+          />
+          <div
+            className="absolute bg-black/70 backdrop-blur-[1px]"
+            style={{ top: spot.top, left: 0, width: spot.left, height: spot.height }}
+          />
+          <div
+            className="absolute bg-black/70 backdrop-blur-[1px]"
+            style={{ top: spot.top, left: spot.left + spot.width, right: 0, height: spot.height }}
+          />
+          {/* Anillo resaltando el elemento */}
+          <div
+            className="absolute rounded-2xl border-2 border-indigo-400 shadow-[0_0_0_4px_rgba(99,102,241,0.25),0_0_40px_rgba(99,102,241,0.35)] pointer-events-none transition-all duration-300"
+            style={{ top: spot.top, left: spot.left, width: spot.width, height: spot.height }}
+          />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onSkip} />
+      )}
+
+      {/* Tooltip */}
+      <div
+        className={`absolute ${tooltip.centered ? 'inset-0 flex items-center justify-center p-4 pointer-events-none' : ''}`}
+        style={tooltip.centered ? undefined : tooltipStyle}
+      >
+        <div className="pointer-events-auto w-full max-w-[340px] rounded-2xl border border-white/15 bg-slate-900 shadow-2xl p-5 relative animate-in fade-in zoom-in-95 duration-200">
           <button
+            type="button"
             onClick={onSkip}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Cerrar tour"
+            className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
-        </div>
 
-        {/* Content */}
-        <div className="my-6">
-          <div className="prose prose-sm prose-invert max-w-none text-slate-300">
-            {step.content}
-          </div>
-        </div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
+            Paso {currentStep + 1} de {ONBOARDING_STEPS.length}
+          </p>
+          <h3 className="text-base font-bold text-white mt-1 pr-6">{step.title}</h3>
+          <p className="text-sm text-slate-300 mt-2 leading-relaxed">{step.description}</p>
+          {step.cta && (
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">{step.cta}</p>
+          )}
 
-        {/* Progress */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / ONBOARDING_STEPS.length) * 100}%` }}
-            />
+          <div className="flex items-center gap-1.5 mt-4 mb-4">
+            {ONBOARDING_STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-label={`Ir al paso ${i + 1}: ${s.title}`}
+                onClick={() => setCurrentStep(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === currentStep ? 'w-6 bg-indigo-400' : 'w-1.5 bg-slate-700 hover:bg-slate-600'
+                }`}
+              />
+            ))}
           </div>
-          <span className="text-xs text-slate-400">
-            {currentStep + 1} de {ONBOARDING_STEPS.length}
-          </span>
-        </div>
 
         {/* Buttons */}
         <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
@@ -190,9 +294,9 @@ export default function OnboardingTour({ onComplete, onSkip }) {
               onClick={handleNext}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all"
             >
-              {currentStep === ONBOARDING_STEPS.length - 1 ? (
+              {isLast ? (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Comenzar</span>
                 </>
               ) : (
@@ -205,6 +309,7 @@ export default function OnboardingTour({ onComplete, onSkip }) {
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
@@ -216,7 +321,7 @@ export function useOnboarding() {
   const [completed, setCompleted] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
-      return localStorage.getItem('fincheck-onboarding-completed') === 'true';
+      return localStorage.getItem(TOUR_KEY) === 'true';
     } catch {
       return false;
     }
@@ -224,7 +329,7 @@ export function useOnboarding() {
   const [showTour, setShowTour] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
-      return localStorage.getItem('fincheck-onboarding-completed') !== 'true';
+      return localStorage.getItem(TOUR_KEY) !== 'true';
     } catch {
       return true;
     }
@@ -232,7 +337,7 @@ export function useOnboarding() {
 
   const persistCompleted = () => {
     try {
-      localStorage.setItem('fincheck-onboarding-completed', 'true');
+      localStorage.setItem(TOUR_KEY, 'true');
     } catch {}
   };
 
@@ -249,7 +354,7 @@ export function useOnboarding() {
 
   const resetTour = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('fincheck-onboarding-completed');
+      localStorage.removeItem(TOUR_KEY);
     }
     setCompleted(false);
     setShowTour(true);

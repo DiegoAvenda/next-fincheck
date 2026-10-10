@@ -51,6 +51,7 @@ export default function Navbar({
             </button>
 
             <button
+              data-tour="nav-transactions"
               onClick={() => setActiveTab('transactions')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'transactions'
@@ -63,6 +64,7 @@ export default function Navbar({
             </button>
 
             <button
+              data-tour="nav-budgets"
               onClick={() => setActiveTab('budgets')}
               className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'budgets'
@@ -78,6 +80,7 @@ export default function Navbar({
             </button>
 
             <button
+              data-tour="nav-advisor"
               onClick={() => setActiveTab('advisor')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'advisor'
@@ -144,6 +147,7 @@ export default function Navbar({
                 {/* Quick Add Button */}
                 <button
                   type="button"
+                  data-tour="add-transaction"
                   onClick={onOpenAddModal}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
                 >
@@ -167,6 +171,7 @@ export default function Navbar({
             <span>Resumen</span>
           </button>
           <button
+            data-tour="nav-transactions"
             onClick={() => setActiveTab('transactions')}
             className={`flex items-center gap-1 px-3 py-1 rounded-md font-medium ${
               activeTab === 'transactions' ? 'bg-indigo-600 text-white' : 'text-slate-400'
@@ -176,6 +181,7 @@ export default function Navbar({
             <span>Gastos/Ingresos</span>
           </button>
           <button
+            data-tour="nav-budgets"
             onClick={() => setActiveTab('budgets')}
             className={`relative flex items-center gap-1 px-3 py-1 rounded-md font-medium ${
               activeTab === 'budgets' ? 'bg-indigo-600 text-white' : 'text-slate-400'
@@ -186,6 +192,7 @@ export default function Navbar({
             {alertsCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
           </button>
           <button
+            data-tour="nav-advisor"
             onClick={() => setActiveTab('advisor')}
             className={`flex items-center gap-1 px-3 py-1 rounded-md font-medium ${
               activeTab === 'advisor' ? 'bg-indigo-600 text-white' : 'text-slate-400'

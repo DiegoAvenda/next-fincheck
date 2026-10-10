@@ -21,7 +21,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
     : null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div data-tour="overview-cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {/* 1. Total Net Balance */}
       <div className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
         <div className="flex items-center justify-between">

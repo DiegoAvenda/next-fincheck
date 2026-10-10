@@ -42,8 +42,24 @@ export default function Home() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
 
-  // Onboarding state
-  const { showTour, completeTour, skipTour } = useOnboarding();
+  // Onboarding state: el tour arranca solo en modo demo (sin sesión) y si no
+  // se completó antes. `tourOpen` permite forzarlo desde "¿Cómo funciona?".
+  const [tourOpen, setTourOpen] = useState(false);
+  const { completed, completeTour, skipTour, resetTour } = useOnboarding();
+  const showTour = !isPending && !user && (!completed || tourOpen);
+
+  const handleCompleteTour = () => {
+    setTourOpen(false);
+    completeTour();
+  };
+  const handleSkipTour = () => {
+    setTourOpen(false);
+    skipTour();
+  };
+  const handleResetTour = () => {
+    resetTour();
+    setTourOpen(true);
+  };
 
   // UI state
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -507,6 +523,15 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <button
               type="button"
+              onClick={handleResetTour}
+              className="hover:text-indigo-300 flex items-center gap-1 transition-colors"
+              title="Ver el recorrido guiado de nuevo"
+            >
+              <span>¿Cómo funciona?</span>
+            </button>
+            <span>•</span>
+            <button
+              type="button"
               onClick={() => setIsBackendModalOpen(true)}
               className="hover:text-emerald-400 flex items-center gap-1 transition-colors"
             >
@@ -551,8 +576,9 @@ export default function Home() {
 
       {showTour && (
         <OnboardingTour
-          onComplete={completeTour}
-          onSkip={skipTour}
+          onComplete={handleCompleteTour}
+          onSkip={handleSkipTour}
+          onGoToTab={setActiveTab}
         />
       )}
     </div>
