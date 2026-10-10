@@ -10,7 +10,7 @@ const HIGHLIGHTS = [
   {
     icon: Sparkles,
     title: 'Panel inteligente',
-    description: 'Alertas de presupuesto, regla 50/30/20 y recomendaciones de ahorro e inversión.',
+    description: 'Alertas de presupuesto, regla 50/30/20 y recomendaciones de ahorro.',
   },
   {
     icon: Database,
@@ -62,7 +62,7 @@ export default function LoginView() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">FinCheck</h1>
-            <p className="text-xs text-slate-400">Control de Finanzas e Inversión</p>
+            <p className="text-xs text-slate-400">Control de Finanzas Personales</p>
           </div>
         </div>
 

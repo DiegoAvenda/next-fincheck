@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "FinCheck | Control de Finanzas, Presupuestos e Inversión",
-  description: "Web app para el control de finanzas personales: registro de gastos e ingresos, desglose por categoría, alertas de presupuesto, y recomendaciones inteligentes de ahorro e inversión. Autenticación con Google vía Better Auth y datos en MongoDB.",
-  keywords: ["finanzas personales", "control de gastos", "presupuesto", "ahorro", "inversión", "Better Auth", "MongoDB", "Google"],
+  title: "FinCheck | Control de Finanzas y Presupuestos",
+  description: "Web app para el control de finanzas personales: registro de gastos e ingresos, desglose por categoría, alertas de presupuesto y recomendaciones inteligentes de ahorro. Autenticación con Google vía Better Auth y datos en MongoDB.",
+  keywords: ["finanzas personales", "control de gastos", "presupuesto", "ahorro", "Better Auth", "MongoDB", "Google"],
 };
 
 export default function RootLayout({ children }) {

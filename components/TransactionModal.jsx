@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import CategoryIcon from './CategoryIcon';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '../lib/constants';
+import { suggestCategoryByDescription } from '../lib/financeCalculations';
 import { X, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 export default function TransactionModal({ isOpen, onClose, onSave, editingTransaction }) {
@@ -37,6 +38,14 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
     setErrors({});
   }, [editingTransaction, isOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Auto-categorization: sugerencia derivada de la descripción (sin efecto)
+  const autoSuggestedCategory = useMemo(() => {
+    if (type === 'expense' && description.trim()) {
+      return suggestCategoryByDescription(description);
+    }
+    return null;
+  }, [description, type]);
 
   // When type changes, adjust default category if needed
   const handleTypeChange = (newType) => {
@@ -197,6 +206,20 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               <label className="block text-xs font-semibold text-slate-300 mb-1">
                 Categoría *
               </label>
+              {autoSuggestedCategory && autoSuggestedCategory !== category && (
+                <div className="flex items-center gap-2 mt-1 mb-2">
+                  <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Categoría sugerida: {autoSuggestedCategory}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCategory(autoSuggestedCategory)}
+                    className="px-2 py-0.5 rounded-full text-xs font-semibold text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              )}
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}

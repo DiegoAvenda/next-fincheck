@@ -1,6 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import {
+  ArrowRight,
+  CalendarDays,
+  CloudOff,
+  Database,
+  Loader2,
+  LogIn,
+  RotateCcw,
+  Sparkles,
+  Upload,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import OverviewCards from '../components/OverviewCards';
 import AlertsBanner from '../components/AlertsBanner';
@@ -24,27 +35,15 @@ import {
   formatMonthES,
   detectRecurring,
 } from '../lib/financeCalculations';
-import { RotateCcw, Sparkles, Database, ArrowRight, CloudOff, Loader2, LogIn, CalendarDays, Upload } from 'lucide-react';
+import OnboardingTour, { useOnboarding } from '../components/OnboardingTour';
 import { INITIAL_TRANSACTIONS, INITIAL_BUDGETS } from '../lib/constants';
-
-const DEMO_STORAGE_KEY = 'fincheck-demo-v2';
-
-function loadDemoState() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed?.transactions) || typeof parsed?.budgets !== 'object') return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
+
+  // Onboarding state
+  const { showTour, completeTour, skipTour } = useOnboarding();
 
   // UI state
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -60,23 +59,20 @@ export default function Home() {
   const initStore = useFinStore((state) => state.init);
   const clearStore = useFinStore((state) => state.clear);
 
-  // Demo data for non-authenticated users (editable, persisted in localStorage)
-  const [demoTransactions, setDemoTransactions] = useState(() => loadDemoState()?.transactions ?? INITIAL_TRANSACTIONS);
-  const [demoBudgets, setDemoBudgets] = useState(() => loadDemoState()?.budgets ?? INITIAL_BUDGETS);
+  // Sync status indicator for authenticated users
+  const syncStatus = user
+    ? status === 'ready'
+      ? 'synced'
+      : status === 'loading'
+        ? 'syncing'
+        : 'error'
+    : null;
+
+  // Demo data for non-authenticated users (static seed, no persistence)
+  const [demoTransactions, setDemoTransactions] = useState(INITIAL_TRANSACTIONS);
+  const [demoBudgets, setDemoBudgets] = useState(INITIAL_BUDGETS);
   const [migrateDismissed, setMigrateDismissed] = useState(false);
   const [period, setPeriod] = useState(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(
-        DEMO_STORAGE_KEY,
-        JSON.stringify({ transactions: demoTransactions, budgets: demoBudgets }),
-      );
-    } catch {
-      // localStorage lleno o bloqueado: el demo sigue funcionando en memoria.
-    }
-  }, [demoTransactions, demoBudgets]);
 
   useEffect(() => {
     if (user?.id) {
@@ -121,18 +117,17 @@ export default function Home() {
     }
   };
 
-  // Demo-only: restores the static sample dataset (localStorage, never the DB).
+  // Demo-only: resets to static seed (no persistence layer)
   const handleResetData = () => {
-    if (!confirm('¿Restablecer los datos de demostración? Se perderán tus cambios locales.')) return;
+    if (!confirm('¿Restablecer los datos de demostración?')) return;
     setDemoTransactions(INITIAL_TRANSACTIONS);
     setDemoBudgets(INITIAL_BUDGETS);
   };
 
   const handleMigrateDemo = async () => {
     setMigrateDismissed(true);
-    const saved = loadDemoState();
-    if (!saved) return;
-    for (const tx of saved.transactions) {
+    // Migrate current demo state (static seed, no persistence layer)
+    for (const tx of demoTransactions) {
       try {
         await useFinStore.getState().addOrUpdateTransaction(tx);
       } catch {
@@ -140,9 +135,9 @@ export default function Home() {
       }
     }
     try {
-      await useFinStore.getState().setBudgets(saved.budgets);
+      await useFinStore.getState().setBudgets(demoBudgets);
     } catch {
-      // Si falla el guardado de presupuestos, las transacciones ya quedaron.
+      // Si falla el guardado, las transacciones ya quedaron.
     }
   };
 
@@ -224,6 +219,7 @@ export default function Home() {
         }}
         onOpenBackendModal={() => setIsBackendModalOpen(true)}
         alertsCount={alerts.totalCount}
+        syncStatus={syncStatus}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -422,7 +418,7 @@ export default function Home() {
                       onClick={() => setActiveTab('advisor')}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 self-start sm:self-auto transition-colors"
                     >
-                      <span>Explorar Asesor e Inversión</span>
+                      <span>Explorar Asesor de Ahorro</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -552,6 +548,13 @@ export default function Home() {
         transactions={displayTransactions}
         budgets={displayBudgets}
       />
+
+      {showTour && (
+        <OnboardingTour
+          onComplete={completeTour}
+          onSkip={skipTour}
+        />
+      )}
     </div>
   );
 }

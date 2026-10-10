@@ -24,6 +24,9 @@ export default function FinancialAdvisor({
   smartAdvice = [],
   totals,
   categoryBreakdown,
+  // Feature flag: oculta las secciones de inversión (simulador + guía) sin
+  // borrar el código. Para reactivar: pasar showInvesting={true} desde app/page.js.
+  showInvesting = false,
 }) {
   // Compound Interest Simulator state (prefilled from real surplus when available)
   const suggestedInitial = Math.max(0, Math.round(totals?.netBalance ?? 0));
@@ -173,14 +176,14 @@ export default function FinancialAdvisor({
             </p>
           </div>
 
-          {/* 20% Ahorro e Inversión */}
+          {/* 20% Ahorro */}
           <div className={`p-4 rounded-xl border transition-all ${
             rule503020.savings.status === 'healthy'
               ? 'bg-slate-900/70 border-emerald-500/30'
               : 'bg-slate-900/70 border-amber-500/30'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400">20% AHORRO E INVERSIÓN</span>
+              <span className="text-xs font-bold text-slate-400">20% AHORRO</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 rule503020.savings.status === 'healthy'
                   ? 'bg-emerald-500/20 text-emerald-400'
@@ -205,7 +208,7 @@ export default function FinancialAdvisor({
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-2">
-              Fondo de emergencia, aportaciones a CETES, ETFs indexados y retiro.
+              Fondo de emergencia y ahorro para tus metas.
             </p>
           </div>
         </div>
@@ -260,7 +263,8 @@ export default function FinancialAdvisor({
         </div>
       </div>
 
-      {/* 4. Interactive Compound Interest Simulator */}
+      {/* 4. Interactive Compound Interest Simulator (oculto por feature flag) */}
+      {showInvesting && (
       <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-5 border-b border-slate-800">
           <div>
@@ -430,8 +434,10 @@ export default function FinancialAdvisor({
           </div>
         </div>
       </div>
+      )}
 
-      {/* 5. Investment Guide: Where to Invest */}
+      {/* 5. Investment Guide: Where to Invest (oculto por feature flag) */}
+      {showInvesting && (
       <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-white/10">
         <h4 className="text-base font-bold text-white mb-1">
           Guía de Instrumentos de Inversión Recomendados
@@ -490,6 +496,7 @@ export default function FinancialAdvisor({
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

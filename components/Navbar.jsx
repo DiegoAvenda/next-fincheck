@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, HardDrive, LogIn } from 'lucide-react';
+import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, HardDrive, LogIn, CloudCheck, RefreshCw, CloudOff } from 'lucide-react';
 
 import UserMenu from './UserMenu';
 import { authClient, signIn } from '../lib/auth-client';
@@ -15,7 +15,8 @@ export default function Navbar({
   isDemoMode = false,
   period,
   setPeriod,
-  alertsCount = 0
+  alertsCount = 0,
+  syncStatus = 'synced', // 'synced' | 'syncing' | 'error'
 }) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
@@ -31,7 +32,7 @@ export default function Navbar({
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight text-white">FinCheck</span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">Control de Finanzas e Inversión</p>
+              <p className="text-xs text-slate-400 hidden sm:block">Control de Finanzas Personales</p>
             </div>
           </div>
 
@@ -85,12 +86,34 @@ export default function Navbar({
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Asesor & Inversión</span>
+              <span>Asesor</span>
             </button>
           </nav>
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Sync Status */}
+            {user && (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-300">
+                {syncStatus === 'synced' ? (
+                  <>
+                    <CloudCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Sync</span>
+                  </>
+                ) : syncStatus === 'syncing' ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                    <span>Sync...</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudOff className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Offline</span>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Mis datos pill */}
             <button
               type="button"
@@ -169,7 +192,7 @@ export default function Navbar({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Inversiones</span>
+            <span>Asesor</span>
           </button>
         </div>
       </div>
