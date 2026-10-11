@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, HardDrive, LogIn, CloudCheck, RefreshCw, CloudOff } from 'lucide-react';
+import { GraduationCap, Plus, TrendingUp, Layers, Receipt, PieChart, Sparkles, HardDrive, LogIn, CloudCheck, RefreshCw, CloudOff, Languages } from 'lucide-react';
 
 import UserMenu from './UserMenu';
 import { authClient, signIn } from '../lib/auth-client';
+import { useFinStore } from '../lib/store';
+import { useI18n } from '../lib/useI18n';
 
 export default function Navbar({
   activeTab,
   setActiveTab,
   onOpenAddModal,
   onOpenBackendModal,
+  onOpenTour,
   user,
   isDemoMode = false,
   period,
@@ -18,6 +21,8 @@ export default function Navbar({
   alertsCount = 0,
   syncStatus = 'synced', // 'synced' | 'syncing' | 'error'
 }) {
+  const { locale, t } = useI18n();
+  const toggleLocale = useFinStore((state) => state.toggleLocale);
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,7 +37,7 @@ export default function Navbar({
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight text-white">FinCheck</span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">Control de Finanzas Personales</p>
+              <p className="text-xs text-slate-400 hidden sm:block">{t.nav.brand}</p>
             </div>
           </div>
 
@@ -47,7 +52,7 @@ export default function Navbar({
               }`}
             >
               <PieChart className="w-4 h-4" />
-              <span>Dashboard</span>
+              <span>{t.nav.dashboard}</span>
             </button>
 
             <button
@@ -60,7 +65,7 @@ export default function Navbar({
               }`}
             >
               <Receipt className="w-4 h-4" />
-              <span>Transacciones</span>
+              <span>{t.nav.transactions}</span>
             </button>
 
             <button
@@ -73,7 +78,7 @@ export default function Navbar({
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span>Presupuestos</span>
+              <span>{t.nav.budgets}</span>
               {alertsCount > 0 && (
                 <span className="w-2 h-2 rounded-full bg-rose-500 ring-4 ring-rose-500/20 animate-pulse"></span>
               )}
@@ -89,7 +94,7 @@ export default function Navbar({
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Asesor</span>
+              <span>{t.nav.advisor}</span>
             </button>
           </nav>
 
@@ -101,17 +106,17 @@ export default function Navbar({
                 {syncStatus === 'synced' ? (
                   <>
                     <CloudCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Sync</span>
+                    <span>{t.nav.sync}</span>
                   </>
                 ) : syncStatus === 'syncing' ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-                    <span>Sync...</span>
+                    <span>{t.nav.syncing}</span>
                   </>
                 ) : (
                   <>
                     <CloudOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Offline</span>
+                    <span>{t.nav.offline}</span>
                   </>
                 )}
               </div>
@@ -125,8 +130,31 @@ export default function Navbar({
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
               <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Mis datos</span>
+              <span>{t.nav.myData}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
+
+            {onOpenTour && (
+              <button
+                type="button"
+                onClick={onOpenTour}
+                title={t.onboarding.howItWorks}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t.onboarding.howItWorks}</span>
+              </button>
+            )}
+
+            {/* Language Toggle */}
+            <button
+              type="button"
+              onClick={toggleLocale}
+              title="Cambiar idioma / Change language"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/60 text-slate-300 border border-slate-700 hover:bg-slate-700/60 transition-colors"
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <span className="font-bold">{locale === 'es' ? 'ES' : 'EN'}</span>
             </button>
 
             {isDemoMode ? (
@@ -138,7 +166,7 @@ export default function Navbar({
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/25 transition-all active:scale-95"
               >
                 <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Iniciar Sesión</span>
+                <span className="hidden sm:inline">{t.nav.signIn}</span>
               </button>
             ) : (
               <>
@@ -152,7 +180,7 @@ export default function Navbar({
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span className="hidden sm:inline">Nuevo Registro</span>
+                  <span className="hidden sm:inline">{t.nav.newRecord}</span>
                 </button>
               </>
             )}
@@ -168,7 +196,7 @@ export default function Navbar({
             }`}
           >
             <PieChart className="w-3.5 h-3.5" />
-            <span>Resumen</span>
+            <span>{t.nav.summary}</span>
           </button>
           <button
             data-tour="nav-transactions"
@@ -178,7 +206,7 @@ export default function Navbar({
             }`}
           >
             <Receipt className="w-3.5 h-3.5" />
-            <span>Gastos/Ingresos</span>
+            <span>{t.nav.expensesIncome}</span>
           </button>
           <button
             data-tour="nav-budgets"
@@ -188,7 +216,7 @@ export default function Navbar({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Presupuestos</span>
+            <span>{t.nav.budgets}</span>
             {alertsCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
           </button>
           <button
@@ -199,7 +227,7 @@ export default function Navbar({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Asesor</span>
+            <span>{t.nav.advisor}</span>
           </button>
         </div>
       </div>

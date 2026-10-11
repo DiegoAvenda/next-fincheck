@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CloudOff,
   Database,
+  GraduationCap,
   Loader2,
   LogIn,
   RotateCcw,
@@ -37,16 +38,19 @@ import {
 } from '../lib/financeCalculations';
 import OnboardingTour, { useOnboarding } from '../components/OnboardingTour';
 import { INITIAL_TRANSACTIONS, INITIAL_BUDGETS } from '../lib/constants';
+import { useI18n } from '../lib/useI18n';
 
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
+  const { t } = useI18n();
 
-  // Onboarding state: el tour arranca solo en modo demo (sin sesión) y si no
-  // se completó antes. `tourOpen` permite forzarlo desde "¿Cómo funciona?".
+  // Onboarding state: el tour se abre solo en modo demo (sin sesión) si aún
+  // no se vio (localStorage `fincheck-tour-v2`). `tourOpen` lo abre
+  // manualmente en cualquier momento (demo o con sesión).
   const [tourOpen, setTourOpen] = useState(false);
   const { completed, completeTour, skipTour, resetTour } = useOnboarding();
-  const showTour = !isPending && !user && (!completed || tourOpen);
+  const showTour = !isPending && (tourOpen || (!user && !completed));
 
   const handleCompleteTour = () => {
     setTourOpen(false);
@@ -135,7 +139,7 @@ export default function Home() {
 
   // Demo-only: resets to static seed (no persistence layer)
   const handleResetData = () => {
-    if (!confirm('¿Restablecer los datos de demostración?')) return;
+    if (!confirm(t.resetDemo)) return;
     setDemoTransactions(INITIAL_TRANSACTIONS);
     setDemoBudgets(INITIAL_BUDGETS);
   };
@@ -213,7 +217,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-sm font-medium">Iniciando FinCheck...</p>
+          <p className="text-sm font-medium">{t.loading}</p>
         </div>
       </div>
     );
@@ -234,6 +238,7 @@ export default function Home() {
           setIsAddModalOpen(true);
         }}
         onOpenBackendModal={() => setIsBackendModalOpen(true)}
+        onOpenTour={handleResetTour}
         alertsCount={alerts.totalCount}
         syncStatus={syncStatus}
       />
@@ -250,16 +255,26 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                authClient.signIn.social({ provider: 'google', callbackURL: '/' });
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition-colors"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Guardar en mi cuenta</span>
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleResetTour}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-indigo-500/40 text-indigo-100 hover:bg-indigo-500/20 transition-colors"
+              >
+                <GraduationCap className="w-4 h-4" />
+                <span>{t.onboarding.howItWorks}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Guardar en mi cuenta</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -524,10 +539,11 @@ export default function Home() {
             <button
               type="button"
               onClick={handleResetTour}
-              className="hover:text-indigo-300 flex items-center gap-1 transition-colors"
+              className="hover:text-indigo-300 flex items-center gap-1.5 transition-colors"
               title="Ver el recorrido guiado de nuevo"
             >
-              <span>¿Cómo funciona?</span>
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>{t.onboarding.howItWorks}</span>
             </button>
             <span>•</span>
             <button

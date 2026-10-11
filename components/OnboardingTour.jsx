@@ -349,6 +349,7 @@ export function useOnboarding() {
 
   const skipTour = () => {
     persistCompleted();
+    setCompleted(true);
     setShowTour(false);
   };
 

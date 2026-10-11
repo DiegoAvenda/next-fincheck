@@ -1,19 +1,21 @@
 'use client';
 
 import React from 'react';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  PiggyBank, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
+  PiggyBank,
   Activity,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { useI18n } from '../lib/useI18n';
 
 export default function OverviewCards({ totals, healthScore, onOpenAdvisor, periodLabel, previousExpense }) {
+  const { t } = useI18n();
   const isPositiveBalance = totals.netBalance >= 0;
   const fmt = (n) => Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const expenseDelta = previousExpense !== null && previousExpense !== undefined
@@ -25,7 +27,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
       {/* 1. Total Net Balance */}
       <div className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Balance Neto</span>
+          <span className="text-xs font-medium text-slate-400">{t.overview.netBalance}</span>
           <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
             <Wallet className="w-4 h-4 text-indigo-400" />
           </div>
@@ -43,9 +45,9 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
               }`}
             >
               {isPositiveBalance ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-              {isPositiveBalance ? 'Superávit' : 'Déficit'}
+              {isPositiveBalance ? t.overview.surplus : t.overview.deficit}
             </span>
-            <span className="text-xs text-slate-400">{periodLabel ?? 'este mes'}</span>
+            <span className="text-xs text-slate-400">{periodLabel ?? t.overview.thisMonth}</span>
           </div>
         </div>
         {/* Subtle accent glow */}
@@ -55,7 +57,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
       {/* 2. Total Incomes */}
       <div className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Ingresos Totales</span>
+          <span className="text-xs font-medium text-slate-400">{t.overview.totalIncome}</span>
           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
           </div>
@@ -66,7 +68,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
           </p>
           <p className="mt-2 text-xs text-slate-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            Total del periodo
+            {t.overview.totalPeriod}
           </p>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-emerald-600/10 blur-xl pointer-events-none" />
@@ -75,7 +77,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
       {/* 3. Total Expenses */}
       <div className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Gastos Totales</span>
+          <span className="text-xs font-medium text-slate-400">{t.overview.totalExpense}</span>
           <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
             <ArrowUpRight className="w-4 h-4 text-rose-400" />
           </div>
@@ -87,8 +89,8 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
           <p className="mt-2 text-xs text-slate-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block"></span>
             {expenseDelta === null
-              ? 'Salidas del periodo'
-              : `${expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} vs mes anterior`}
+              ? t.overview.periodOutflows
+              : `${expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} ${t.overview.vsPrevMonth}`}
           </p>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-rose-600/10 blur-xl pointer-events-none" />
@@ -97,7 +99,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
       {/* 4. Savings Rate */}
       <div className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Tasa de Ahorro</span>
+          <span className="text-xs font-medium text-slate-400">{t.overview.savingsRate}</span>
           <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
             <PiggyBank className="w-4 h-4 text-amber-400" />
           </div>
@@ -107,7 +109,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
             <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               {totals.savingsRate}%
             </p>
-            <span className="text-xs text-slate-400">del ingreso</span>
+            <span className="text-xs text-slate-400">{t.overview.ofIncome}</span>
           </div>
 
           <div className="mt-2.5 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
@@ -119,14 +121,14 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
             />
           </div>
           <span className="mt-1 text-[11px] text-slate-400 block">
-            {totals.savingsRate >= 20 ? 'Meta saludable cumplida (≥20%)' : 'Sugerido: subir al 20%'}
+            {totals.savingsRate >= 20 ? t.overview.healthyGoal : t.overview.suggested}
           </span>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-amber-600/10 blur-xl pointer-events-none" />
       </div>
 
       {/* 5. Financial Health Score */}
-      <div 
+      <div
         onClick={onOpenAdvisor}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -136,11 +138,11 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
         }}
         role="button"
         tabIndex={0}
-        title="Ver diagnóstico financiero completo"
+        title={t.overview.viewDiagnosis}
         className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden cursor-pointer group"
       >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Salud Financiera</span>
+          <span className="text-xs font-medium text-slate-400">{t.overview.financialHealth}</span>
           <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Activity className="w-4 h-4 text-cyan-400" />
           </div>

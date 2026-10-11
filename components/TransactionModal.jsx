@@ -5,8 +5,10 @@ import CategoryIcon from './CategoryIcon';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '../lib/constants';
 import { suggestCategoryByDescription } from '../lib/financeCalculations';
 import { X, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { useI18n } from '../lib/useI18n';
 
 export default function TransactionModal({ isOpen, onClose, onSave, editingTransaction }) {
+  const { t } = useI18n();
   const [type, setType] = useState('expense');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -68,14 +70,14 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
     const newErrors = {};
 
     if (!description.trim()) {
-      newErrors.description = 'Ingresa un concepto o descripción';
+      newErrors.description = t.transaction.errors.description;
     }
     const parsedAmount = parseFloat(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      newErrors.amount = 'Ingresa un monto válido mayor a 0';
+      newErrors.amount = t.transaction.errors.amount;
     }
     if (!date) {
-      newErrors.date = 'Selecciona una fecha';
+      newErrors.date = t.transaction.errors.date;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -106,7 +108,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
         {/* Top bar */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <h3 className="text-lg font-bold text-white">
-            {editingTransaction ? 'Editar Movimiento' : 'Registrar Movimiento'}
+            {editingTransaction ? t.transaction.editMovement : t.transaction.registerMovement}
           </h3>
           <button
             onClick={onClose}
@@ -129,7 +131,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               }`}
             >
               <ArrowUpRight className="w-4 h-4" />
-              <span>Gasto (-)</span>
+              <span>{t.transaction.expense}</span>
             </button>
 
             <button
@@ -142,14 +144,14 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               }`}
             >
               <ArrowDownLeft className="w-4 h-4" />
-              <span>Ingreso (+)</span>
+              <span>{t.transaction.income}</span>
             </button>
           </div>
 
           {/* Amount and Currency */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Monto ($) *
+              {t.transaction.amount} *
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base">
@@ -179,11 +181,11 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
           {/* Concept / Description */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Concepto / Título *
+              {t.transaction.concept} *
             </label>
             <input
               type="text"
-              placeholder="Ej. Supermercado, Pago quincenal, Gasolina..."
+              placeholder={t.transaction.conceptPlaceholder}
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -204,19 +206,19 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Categoría *
+                {t.transaction.category} *
               </label>
               {autoSuggestedCategory && autoSuggestedCategory !== category && (
                 <div className="flex items-center gap-2 mt-1 mb-2">
                   <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Categoría sugerida: {autoSuggestedCategory}
+                    {t.transaction.suggestedCategory}: {autoSuggestedCategory}
                   </div>
                   <button
                     type="button"
                     onClick={() => setCategory(autoSuggestedCategory)}
                     className="px-2 py-0.5 rounded-full text-xs font-semibold text-indigo-400 hover:bg-indigo-500/20 transition-colors"
                   >
-                    Aplicar
+                    {t.transaction.apply}
                   </button>
                 </div>
               )}
@@ -235,7 +237,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Fecha *
+                {t.transaction.date} *
               </label>
               <input
                 type="date"
@@ -249,7 +251,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
           {/* Payment Method */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Método de Pago
+              {t.transaction.paymentMethod}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {PAYMENT_METHODS.map((pm) => (
@@ -272,11 +274,11 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
           {/* Optional Notes */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Notas adicionales (opcional)
+              {t.transaction.notes}
             </label>
             <input
               type="text"
-              placeholder="Ej. Factura #402, compra a 3 meses..."
+              placeholder={t.transaction.notesPlaceholder}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
@@ -290,14 +292,14 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               onClick={onClose}
               className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
-              Cancelar
+              {t.transaction.cancel}
             </button>
             <button
               type="submit"
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25 transition-all active:scale-95"
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
-              <span>{editingTransaction ? 'Actualizar' : 'Guardar'}</span>
+              <span>{editingTransaction ? t.transaction.update : t.transaction.save}</span>
             </button>
           </div>
         </form>
