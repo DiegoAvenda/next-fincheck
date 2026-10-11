@@ -1,28 +1,28 @@
 # FinCheck
 
-Web app de finanzas personales: registro de gastos e ingresos, desglose por
-categoría, alertas de presupuesto, regla 50/30/20 y recomendaciones de ahorro e
-inversión.
+Personal finance web app: income and expense tracking, breakdown by
+category, budget alerts, 50/30/20 rule, and savings and
+investment recommendations.
 
 ## Stack
 
-| Capa | Tecnología |
+| Layer | Technology |
 | --- | --- |
 | Framework | Next.js 16 (App Router) + React 19 |
-| Autenticación | [Better Auth](https://better-auth.com) con proveedor **Google** |
-| Base de datos | **MongoDB** (driver oficial, sin ORM) |
-| Estado en cliente | Zustand |
-| Estilos | Tailwind CSS 4 |
+| Authentication | [Better Auth](https://better-auth.com) with **Google** provider |
+| Database | **MongoDB** (official driver, no ORM) |
+| Client state | Zustand |
+| Styles | Tailwind CSS 4 |
 
-> Antes de esta versión el proyecto usaba AWS Amplify Gen 2 (Amazon Cognito +
-DynamoDB/AppSync). Ese backend fue sustituido por completo por Better Auth +
+> Before this version the project used AWS Amplify Gen 2 (Amazon Cognito +
+DynamoDB/AppSync). That backend was fully replaced by Better Auth +
 MongoDB.
 
-## Puesta en marcha
+## Getting started
 
-### 1. Variables de entorno
+### 1. Environment variables
 
-Copia `.env.example` a `.env.local` y completa los valores:
+Copy `.env.example` to `.env.local` and fill in the values:
 
 ```bash
 cp .env.example .env.local
@@ -30,7 +30,7 @@ cp .env.example .env.local
 
 ```dotenv
 BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=<genera uno con: node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))">
+BETTER_AUTH_SECRET=<generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))">
 
 MONGODB_URI=mongodb://127.0.0.1:27017/fincheck
 MONGODB_DB_NAME=fincheck
@@ -42,62 +42,62 @@ GOOGLE_CLIENT_SECRET=
 
 ### 2. MongoDB
 
-- **Local:** instala MongoDB Community y usa `mongodb://127.0.0.1:27017/fincheck`.
-  Si tu servidor no corre como *replica set*, deja `MONGODB_TRANSACTIONS=false`.
-- **Atlas (sin instalar nada):** crea un clúster gratuito y pega la cadena
-  `mongodb+srv://...` en `MONGODB_URI`.
+- **Local:** install MongoDB Community and use `mongodb://127.0.0.1:27017/fincheck`.
+  If your server does not run as a *replica set*, keep `MONGODB_TRANSACTIONS=false`.
+- **Atlas (no install needed):** create a free cluster and paste the
+  `mongodb+srv://...` connection string into `MONGODB_URI`.
 
-Las colecciones se crean solas en el primer uso y los índices
-(`transactions` por `userId + id`, `budgets` por `userId`) se generan
-automáticamente.
+Collections are created automatically on first use and indexes
+(`transactions` by `userId + id`, `budgets` by `userId`) are generated
+automatically.
 
-### 3. Credenciales de Google
+### 3. Google credentials
 
-1. Entra a [Google Cloud Console → Credenciales](https://console.cloud.google.com/apis/credentials).
-2. Crea una **ID de cliente de OAuth** de tipo *Aplicación web*.
-3. Agrega los *URIs de redireccionamiento autorizados*:
+1. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Create a web-application **OAuth client ID**.
+3. Add the authorized *redirect URIs*:
    - `http://localhost:3000/api/auth/callback/google`
-   - `https://TU-DOMINIO/api/auth/callback/google`
-4. Copia el *Client ID* y el *Client Secret* en `GOOGLE_CLIENT_ID` y
+   - `https://YOUR-DOMAIN/api/auth/callback/google`
+4. Copy the *Client ID* and *Client Secret* into `GOOGLE_CLIENT_ID` and
    `GOOGLE_CLIENT_SECRET`.
 
-### 4. Ejecutar
+### 4. Run
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) e inicia sesión con Google.
+Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
 
-## Arquitectura
+## Architecture
 
 ```
 app/
-  api/auth/[...all]/route.js   → endpoints de Better Auth (login, callback, session, logout)
-  api/bootstrap/route.js       → carga los datos del usuario (la cuenta nueva arranca vacía)
-  api/transactions/route.js    → crear/actualizar y borrar transacciones
-  api/budgets/route.js         → guardar presupuestos
-  page.js                      → dashboard (demo local sin login, datos reales con sesión)
+  api/auth/[...all]/route.js   → Better Auth endpoints (login, callback, session, logout)
+  api/bootstrap/route.js       → loads the user data (new accounts start empty)
+  api/transactions/route.js    → create/update and delete transactions
+  api/budgets/route.js         → save budgets
+  page.js                      → dashboard (local demo without login, real data with session)
 lib/
-  auth.js                      → configuración de Better Auth (Google + adaptador MongoDB)
-  auth-client.js               → cliente de Better Auth para React
-  mongodb.js                   → cliente MongoDB cacheado + índices
-  server/finance.js            → repositorio de transacciones/presupuestos
-  apiClient.js                 → fetch tipado contra las rutas /api
-  store.js                     → estado compartido (Zustand)
+  auth.js                      → Better Auth setup (Google + MongoDB adapter)
+  auth-client.js               → Better Auth client for React
+  mongodb.js                   → cached MongoDB client + indexes
+  server/finance.js            → transactions/budgets repository
+  apiClient.js                 → typed fetch wrapper for the /api routes
+  store.js                     → shared state (Zustand)
 components/
-  LoginView.jsx                → pantalla de acceso con Google
-  UserMenu.jsx                 → menú de cuenta y cierre de sesión
-  BackendModal.jsx             → visor de datos del periodo y exportación
+  LoginView.jsx                → Google sign-in screen
+  UserMenu.jsx                 → account menu and sign-out
+  BackendModal.jsx             → period data viewer and export
 ```
 
-### Modelo de datos
+### Data model
 
 ```
 transactions  { userId, id, description, amount, type, category, date, paymentMethod, notes }
-budgets       { userId, values: { [categoría]: monthlyLimit } }
+budgets       { userId, values: { [category]: monthlyLimit } }
 ```
 
-Todos los documentos se filtran por `userId` (el id del usuario de Better Auth),
-así que cada cuenta solo ve y modifica su propia información.
+All documents are filtered by `userId` (the Better Auth user id),
+so each account only sees and modifies its own data.
