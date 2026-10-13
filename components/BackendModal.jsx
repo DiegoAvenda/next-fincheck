@@ -15,14 +15,16 @@ import {
 } from 'lucide-react';
 
 import { useFinStore } from '../lib/store';
+import { useI18n } from '../lib/useI18n';
 
 const TABS = [
-  { id: 'overview', label: 'Resumen' },
-  { id: 'schema', label: 'Mis datos' },
-  { id: 'export', label: 'Exportar' },
+  { id: 'overview', labelKey: 'tabOverview' },
+  { id: 'schema', labelKey: 'tabSchema' },
+  { id: 'export', labelKey: 'tabExport' },
 ];
 
 export default function BackendModal({ isOpen, onClose, transactions: propTransactions, budgets: propBudgets }) {
+  const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
   const storeTransactions = useFinStore((state) => state.transactions);
@@ -82,12 +84,12 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">Mis datos y exportación</h3>
+                <h3 className="text-base font-bold text-white">{t.backend.title}</h3>
                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Sincronizado
+                  {t.backend.synced}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Tus movimientos, disponibles en tus dispositivos</p>
+              <p className="text-xs text-slate-400">{t.backend.desc}</p>
             </div>
           </div>
 
@@ -112,7 +114,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              {tab.label}
+              {tab.labelKey ? t.backend[tab.labelKey] : tab.id}
             </button>
           ))}
         </div>
@@ -122,39 +124,37 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
               <h4 className="font-bold text-white text-sm flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-amber-400" />
-                Tu cuenta
+                {t.backend.account}
               </h4>
               <p className="text-slate-300 mt-1 leading-relaxed">
-                Inicias sesión con Google. Tus movimientos quedan ligados solo a tu usuario y
-                se sincronizan entre tus dispositivos.
+                {t.backend.accountDesc}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
               <h4 className="font-bold text-white text-sm flex items-center gap-2">
                 <Database className="w-4 h-4 text-emerald-400" />
-                Dónde están tus datos
+                {t.backend.where}
               </h4>
               <p className="text-slate-300 mt-1 leading-relaxed">
-                Se guardan en tu espacio privado en la nube, siempre separados por cuenta.
-                Puedes descargarlos o copiarlos cuando quieras desde la pestaña Exportar.
+                {t.backend.whereDesc}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
               <h4 className="font-bold text-white text-sm flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-cyan-400" />
-                Puesta en marcha
+                {t.backend.setup}
               </h4>
               <div>
                 <div>
-                  <span className="text-slate-400">1. Tus datos se guardan automáticamente al iniciar sesión.</span>
+                  <span className="text-slate-400">{t.backend.setup1}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">2. Puedes exportarlos en CSV desde Transacciones o en JSON desde aquí.</span>
+                  <span className="text-slate-400">{t.backend.setup2}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">3. Al cerrar sesión en otro dispositivo, tus datos siguen intactos.</span>
+                  <span className="text-slate-400">{t.backend.setup3}</span>
                 </div>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
         {activeTab === 'schema' && (
           <div className="mt-4 space-y-3 max-h-[420px] overflow-y-auto pr-1 text-xs">
             <p className="text-slate-300">
-              Tus movimientos y presupuestos, listos para respaldar o analizar fuera de la app:
+              {t.backend.schemaDesc}
             </p>
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
               <span className="text-slate-500">{'// gestionadas por Better Auth'}</span>
@@ -203,7 +203,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
               <br />
               &nbsp;&nbsp;userId: String!, <span className="text-slate-500">{'// índice único'}</span>
               <br />
-              &nbsp;&nbsp;values: &#123; [categoría]: Number &#125;
+              &nbsp;&nbsp;values: &#123; [{locale === 'en' ? 'category' : 'categoría'}]: Number &#125;
               <br />
               &#125;
             </div>
@@ -213,7 +213,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
         {activeTab === 'export' && (
           <div className="mt-4 space-y-3 max-h-[420px] overflow-y-auto pr-1 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Documentos actuales de tu usuario:</span>
+              <span className="text-slate-400">{t.backend.exportDocs}</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -221,7 +221,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
                   className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Descargar</span>
+                  <span>{t.backend.download}</span>
                 </button>
                 <button
                   type="button"
@@ -229,7 +229,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
                   className="flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? '¡Copiado!' : 'Copiar'}</span>
+                  <span>{copied ? t.backend.copied : t.backend.copy}</span>
                 </button>
               </div>
             </div>
@@ -242,8 +242,8 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
             />
 
             <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
-              <Lock className="w-3.5 h-3.5" /> El export solo incluye tus propios documentos.
-              <HardDrive className="w-3.5 h-3.5 ml-1" /> Respaldos con <code>mongodump</code> en el servidor.
+              <Lock className="w-3.5 h-3.5" /> {t.backend.exportNote}
+              <HardDrive className="w-3.5 h-3.5 ml-1" /> {t.backend.backupNote}
             </p>
           </div>
         )}
@@ -254,7 +254,7 @@ export default function BackendModal({ isOpen, onClose, transactions: propTransa
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white transition-colors"
           >
-            Entendido
+            {t.backend.done}
           </button>
         </div>
       </div>

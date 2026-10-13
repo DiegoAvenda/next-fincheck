@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import { AlertTriangle, AlertCircle, X, ChevronRight, ShieldAlert } from 'lucide-react';
+import { useI18n } from '../lib/useI18n';
+import { getCategoryLabel } from '../lib/i18n';
 
 export default function AlertsBanner({ alerts, onNavigateToBudgets }) {
+  const { t } = useI18n();
   const [dismissed, setDismissed] = useState(false);
 
   if (alerts.totalCount === 0 || dismissed) {
@@ -28,11 +31,11 @@ export default function AlertsBanner({ alerts, onNavigateToBudgets }) {
               <div className="flex flex-wrap items-center gap-2">
                 <h4 className="text-sm font-bold text-white">
                   {criticalCount > 0
-                    ? `¡Atención! Tienes ${criticalCount} ${criticalCount === 1 ? 'categoría que sobrepasó' : 'categorías que sobrepasaron'} el presupuesto`
-                    : `Alerta Preventiva: Tienes ${warningCount} ${warningCount === 1 ? 'categoría cerca del límite' : 'categorías cerca del límite'}`}
+                    ? `${t.alerts.attention} ${criticalCount} ${criticalCount === 1 ? t.alerts.criticalOne : t.alerts.criticalMany} ${t.alerts.budgetWord}`
+                    : `${t.alerts.preventive} ${warningCount} ${warningCount === 1 ? t.alerts.warningOne : t.alerts.warningMany}`}
                 </h4>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  {criticalCount > 0 ? 'Límite Excedido' : 'Riesgo Moderado'}
+                  {criticalCount > 0 ? t.alerts.limitExceeded : t.alerts.moderateRisk}
                 </span>
               </div>
 
@@ -44,7 +47,7 @@ export default function AlertsBanner({ alerts, onNavigateToBudgets }) {
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300"
                   >
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                    <strong>{c.category}:</strong> Gastaste ${c.spent.toLocaleString()} / ${c.budget.toLocaleString()} (+${c.overAmount.toLocaleString()} excedido)
+                    <strong>{getCategoryLabel(c.category, t)}:</strong> {t.alerts.spentVerb} ${c.spent.toLocaleString()} / ${c.budget.toLocaleString()} (+${c.overAmount.toLocaleString()} {t.alerts.overWord})
                   </span>
                 ))}
 
@@ -54,7 +57,7 @@ export default function AlertsBanner({ alerts, onNavigateToBudgets }) {
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300"
                   >
                     <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                    <strong>{w.category}:</strong> Al {w.percentage}% (${w.spent.toLocaleString()} / ${w.budget.toLocaleString()})
+                    <strong>{getCategoryLabel(w.category, t)}:</strong> {t.alerts.atWord} {w.percentage}% (${w.spent.toLocaleString()} / ${w.budget.toLocaleString()})
                   </span>
                 ))}
               </div>
@@ -67,14 +70,14 @@ export default function AlertsBanner({ alerts, onNavigateToBudgets }) {
               onClick={onNavigateToBudgets}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-colors shadow-sm"
             >
-              <span>Ajustar Presupuesto</span>
+              <span>{t.alerts.adjust}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
 
             <button
               onClick={() => setDismissed(true)}
               className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-              title="Ocultar alerta"
+              title={t.alerts.hideTitle}
             >
               <X className="w-4 h-4" />
             </button>

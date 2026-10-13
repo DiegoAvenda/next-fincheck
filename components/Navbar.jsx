@@ -126,7 +126,7 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenBackendModal}
-              title="Ver y exportar mis datos"
+              title={t.nav.myData}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
               <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
@@ -134,7 +134,7 @@ export default function Navbar({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
 
-            {onOpenTour && (
+            {false && onOpenTour && (
               <button
                 type="button"
                 onClick={onOpenTour}
@@ -146,7 +146,8 @@ export default function Navbar({
               </button>
             )}
 
-            {/* Language Toggle */}
+            {/* Language Toggle — hidden; code kept for future use */}
+            {false && (
             <button
               type="button"
               onClick={toggleLocale}
@@ -156,6 +157,7 @@ export default function Navbar({
               <Languages className="w-3.5 h-3.5" />
               <span className="font-bold">{locale === 'es' ? 'ES' : 'EN'}</span>
             </button>
+            )}
 
             {isDemoMode ? (
               <button

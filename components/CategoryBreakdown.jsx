@@ -3,8 +3,11 @@
 import React, { useMemo, useState } from 'react';
 import CategoryIcon from './CategoryIcon';
 import { AlertTriangle, CheckCircle, PieChart, Sparkles } from 'lucide-react';
+import { useI18n } from '../lib/useI18n';
+import { getCategoryLabel } from '../lib/i18n';
 
 export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense = 0, onNavigateToBudgets }) {
+  const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState(null);
 
   // Filter only categories with spending for the chart
@@ -39,19 +42,19 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-white tracking-tight">Gastos por Categoría</h3>
+            <h3 className="text-lg font-bold text-white tracking-tight">{t.breakdown.title}</h3>
             <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              {activeSpendings.length} activas
+              {activeSpendings.length} {t.breakdown.active}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">Distribución y seguimiento de presupuesto mensual</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t.breakdown.desc}</p>
         </div>
 
         <button
           onClick={onNavigateToBudgets}
           className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 self-start sm:self-auto"
         >
-          <span>Configurar límites</span>
+          <span>{t.breakdown.configure}</span>
           <span>→</span>
         </button>
       </div>
@@ -63,7 +66,7 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
             {totalExpense === 0 ? (
               <div className="w-48 h-48 rounded-full border-4 border-dashed border-slate-800 flex flex-col items-center justify-center text-center p-4">
                 <PieChart className="w-8 h-8 text-slate-600 mb-1" />
-                <span className="text-xs text-slate-500">Sin gastos en el periodo</span>
+                <span className="text-xs text-slate-500">{t.breakdown.noExpenses}</span>
               </div>
             ) : (
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
@@ -104,7 +107,7 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
             {/* Inner Center Info */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-4">
               <span className="text-[11px] font-medium text-slate-400">
-                {selectedOrTop && activeCategory ? selectedOrTop.label : 'Gasto Total'}
+                {selectedOrTop && activeCategory ? getCategoryLabel(selectedOrTop.id, t) : t.breakdown.totalLabel}
               </span>
               <p className="text-xl sm:text-2xl font-black text-white mt-0.5">
                 ${(selectedOrTop && activeCategory ? selectedOrTop.spent : totalExpense).toLocaleString('en-US', {
@@ -114,14 +117,14 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
               </p>
               {selectedOrTop && activeCategory && (
                 <span className="text-[11px] font-bold text-indigo-400 mt-0.5">
-                  {selectedOrTop.percentageOfTotal}% del total
+                  {selectedOrTop.percentageOfTotal}% {t.breakdown.ofTotal}
                 </span>
               )}
             </div>
           </div>
 
           <p className="text-[11px] text-slate-400 mt-2 text-center">
-            Pasa el cursor sobre el gráfico para inspeccionar cada categoría
+            {t.breakdown.hoverHint}
           </p>
         </div>
 
@@ -157,11 +160,11 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white truncate">{cat.label}</span>
+                        <span className="text-sm font-semibold text-white truncate">{getCategoryLabel(cat.id, t)}</span>
                         {cat.isOverBudget && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                             <AlertTriangle className="w-2.5 h-2.5" />
-                            Excedido
+                            {t.breakdown.overBudget}
                           </span>
                         )}
                         {cat.isNearBudget && (
@@ -171,7 +174,7 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
                         )}
                       </div>
                       <span className="text-xs text-slate-400">
-                        {cat.percentageOfTotal}% del gasto total • {cat.count} {cat.count === 1 ? 'registro' : 'registros'}
+                        {cat.percentageOfTotal}% {t.breakdown.ofCategoryTotal} • {cat.count} {cat.count === 1 ? t.breakdown.recordOne : t.breakdown.recordMany}
                       </span>
                     </div>
                   </div>
@@ -181,7 +184,7 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
                       ${cat.spent.toLocaleString()}
                     </span>
                     <span className="text-xs text-slate-400 block">
-                      de ${cat.budget.toLocaleString('es-MX')} límite.
+                      {t.breakdown.ofLimit} ${cat.budget.toLocaleString()} {t.breakdown.limitWord}
                     </span>
                   </div>
                 </div>
@@ -205,11 +208,11 @@ export default function CategoryBreakdown({ categoryBreakdown = [], totalExpense
                 <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
                   <span>
                     {cat.isOverBudget
-                      ? `+$${cat.overAmount.toLocaleString()} sobre el límite`
-                      : `Disponible: $${cat.remaining.toLocaleString()}`}
+                      ? `+$${cat.overAmount.toLocaleString()} ${t.breakdown.overBy}`
+                      : `${t.breakdown.available}: $${cat.remaining.toLocaleString()}`}
                   </span>
                   <span className={cat.isOverBudget ? 'font-bold text-rose-400' : 'text-slate-400'}>
-                    {cat.percentageOfBudget}% usado
+                    {cat.percentageOfBudget}% {t.breakdown.usedWord}
                   </span>
                 </div>
               </div>

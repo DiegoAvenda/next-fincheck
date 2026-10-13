@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '../lib/c
 import { suggestCategoryByDescription } from '../lib/financeCalculations';
 import { X, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { useI18n } from '../lib/useI18n';
+import { getCategoryLabel, getPaymentLabel } from '../lib/i18n';
 
 export default function TransactionModal({ isOpen, onClose, onSave, editingTransaction }) {
   const { t } = useI18n();
@@ -211,7 +212,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               {autoSuggestedCategory && autoSuggestedCategory !== category && (
                 <div className="flex items-center gap-2 mt-1 mb-2">
                   <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    {t.transaction.suggestedCategory}: {autoSuggestedCategory}
+                    {t.transaction.suggestedCategory}: {getCategoryLabel(autoSuggestedCategory, t)}
                   </div>
                   <button
                     type="button"
@@ -229,7 +230,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
               >
                 {currentCategories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.label}
+                    {getCategoryLabel(c.id, t)}
                   </option>
                 ))}
               </select>
@@ -265,7 +266,7 @@ export default function TransactionModal({ isOpen, onClose, onSave, editingTrans
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {pm.label}
+                  {getPaymentLabel(pm.id, t)}
                 </button>
               ))}
             </div>

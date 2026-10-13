@@ -13,11 +13,13 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useI18n } from '../lib/useI18n';
+import { numberLocale } from '../lib/i18n';
 
 export default function OverviewCards({ totals, healthScore, onOpenAdvisor, periodLabel, previousExpense }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const numLocale = numberLocale(locale);
   const isPositiveBalance = totals.netBalance >= 0;
-  const fmt = (n) => Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n) => Number(n).toLocaleString(numLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const expenseDelta = previousExpense !== null && previousExpense !== undefined
     ? totals.totalExpense - previousExpense
     : null;
@@ -90,7 +92,7 @@ export default function OverviewCards({ totals, healthScore, onOpenAdvisor, peri
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block"></span>
             {expenseDelta === null
               ? t.overview.periodOutflows
-              : `${expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} ${t.overview.vsPrevMonth}`}
+              : `${expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString(numLocale)} ${t.overview.vsPrevMonth}`}
           </p>
         </div>
         <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-rose-600/10 blur-xl pointer-events-none" />

@@ -33,9 +33,10 @@ import {
   calculateHealthScore,
   generateSmartAdvice,
   listMonths,
-  formatMonthES,
+  formatMonthLabel,
   detectRecurring,
 } from '../lib/financeCalculations';
+import { getCategoryLabel, numberLocale } from '../lib/i18n';
 import OnboardingTour, { useOnboarding } from '../components/OnboardingTour';
 import { INITIAL_TRANSACTIONS, INITIAL_BUDGETS } from '../lib/constants';
 import { useI18n } from '../lib/useI18n';
@@ -43,14 +44,15 @@ import { useI18n } from '../lib/useI18n';
 export default function Home() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const numLocale = numberLocale(locale);
 
   // Onboarding state: el tour se abre solo en modo demo (sin sesión) si aún
   // no se vio (localStorage `fincheck-tour-v2`). `tourOpen` lo abre
   // manualmente en cualquier momento (demo o con sesión).
   const [tourOpen, setTourOpen] = useState(false);
   const { completed, completeTour, skipTour, resetTour } = useOnboarding();
-  const showTour = !isPending && (tourOpen || (!user && !completed));
+  const showTour = false; // Tour hidden; code preserved for future use
 
   const handleCompleteTour = () => {
     setTourOpen(false);
@@ -186,18 +188,18 @@ export default function Home() {
     () => calculateCategoryBreakdown(displayTransactions, displayBudgets),
     [displayTransactions, displayBudgets],
   );
-  const alerts = useMemo(() => calculateBudgetAlerts(categoryBreakdown), [categoryBreakdown]);
+  const alerts = useMemo(() => calculateBudgetAlerts(categoryBreakdown, locale), [categoryBreakdown, locale]);
   const rule503020 = useMemo(
     () => calculate503020(categoryBreakdown, totals.totalIncome, totals.netBalance),
     [categoryBreakdown, totals.totalIncome, totals.netBalance],
   );
   const healthScore = useMemo(
-    () => calculateHealthScore(totals, categoryBreakdown, alerts),
-    [totals, categoryBreakdown, alerts],
+    () => calculateHealthScore(totals, categoryBreakdown, alerts, locale),
+    [totals, categoryBreakdown, alerts, locale],
   );
   const smartAdvice = useMemo(
-    () => generateSmartAdvice(totals, categoryBreakdown, rule503020, alerts),
-    [totals, categoryBreakdown, rule503020, alerts],
+    () => generateSmartAdvice(totals, categoryBreakdown, rule503020, alerts, locale),
+    [totals, categoryBreakdown, rule503020, alerts, locale],
   );
   const recurring = useMemo(() => detectRecurring(allTransactions), [allTransactions]);
   const expenseDelta = previousPeriodTotals
@@ -244,48 +246,14 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {isDemoMode && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-sm">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 shrink-0" />
-              <div>
-                <p className="font-semibold">Modo demostración editable</p>
-                <p className="text-xs text-indigo-200/80 mt-0.5">
-                  Puedes añadir, editar y borrar con datos de ejemplo. Se guardan en este navegador.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleResetTour}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-indigo-500/40 text-indigo-100 hover:bg-indigo-500/20 transition-colors"
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span>{t.onboarding.howItWorks}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  authClient.signIn.social({ provider: 'google', callbackURL: '/' });
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Guardar en mi cuenta</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         {user && hasCustomDemo && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-sm">
             <div className="flex items-center gap-3">
               <Upload className="w-5 h-5 shrink-0" />
               <div>
-                <p className="font-semibold">Tienes cambios del demo en este navegador</p>
+                <p className="font-semibold">{t.page.demoChangesTitle}</p>
                 <p className="text-xs text-emerald-200/80 mt-0.5">
-                  Impórtalos a tu cuenta o descártalos para quedarte con los datos de la nube.
+                  {t.page.demoChangesDesc}
                 </p>
               </div>
             </div>
@@ -295,14 +263,14 @@ export default function Home() {
                 onClick={() => setMigrateDismissed(true)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-emerald-200 hover:bg-emerald-500/15 transition-colors"
               >
-                Descartar
+                {t.page.discard}
               </button>
               <button
                 type="button"
                 onClick={handleMigrateDemo}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors"
               >
-                Importar demo
+                {t.page.importDemo}
               </button>
             </div>
           </div>
@@ -316,34 +284,34 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm font-bold text-white">
-                {activePeriod ? formatMonthES(activePeriod) : 'Sin movimientos'}
+                {activePeriod ? formatMonthLabel(activePeriod, locale) : t.page.noMovements}
               </p>
               <p className="text-xs text-slate-400">
                 {previousPeriodTotals && expenseDelta !== null ? (
                   <>
-                    vs {formatMonthES(previousPeriodTotals.key)}:{' '}
+                    {t.page.vsPrev} {formatMonthLabel(previousPeriodTotals.key, locale)}:{' '}
                     <span className={expenseDelta <= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-                      {expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString('es-MX')} en gastos
+                      {expenseDelta <= 0 ? '−' : '+'}${Math.abs(Math.round(expenseDelta)).toLocaleString(numLocale)} {t.page.expensesLabel}
                     </span>
                   </>
                 ) : (
-                  'Presupuestos y alertas calculados sobre este mes'
+                  t.page.budgetAlertsLabel
                 )}
               </p>
             </div>
           </div>
           {availableMonths.length > 1 && (
             <label className="flex items-center gap-2 text-xs text-slate-300">
-              <span className="text-slate-400">Periodo</span>
+              <span className="text-slate-400">{t.page.periodLabel}</span>
               <select
                 value={activePeriod ?? ''}
                 onChange={(e) => setPeriod(e.target.value)}
-                aria-label="Seleccionar mes"
+                aria-label={t.page.selectMonth}
                 className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
               >
                 {availableMonths.map((m) => (
                   <option key={m} value={m}>
-                    {formatMonthES(m)}
+                    {formatMonthLabel(m, locale)}
                   </option>
                 ))}
               </select>
@@ -355,7 +323,7 @@ export default function Home() {
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm">
             <CloudOff className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">No se pudo sincronizar tus datos</p>
+              <p className="font-semibold">{t.page.syncErrorTitle}</p>
               <p className="text-xs text-rose-200/80 mt-0.5">{syncError}</p>
             </div>
           </div>
@@ -364,16 +332,16 @@ export default function Home() {
         {isLoadingData ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <p className="text-sm font-medium">Cargando tus finanzas...</p>
+            <p className="text-sm font-medium">{t.page.loading}</p>
           </div>
         ) : (
           <>
             {user && allTransactions.length === 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/5">
                 <div>
-                  <p className="text-sm font-bold text-white">Tu cuenta está en cero, como debe ser</p>
+                  <p className="text-sm font-bold text-white">{t.page.emptyAccountTitle}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Los datos de prueba solo viven en el demo sin login. Registra tu primer movimiento para ver tus números reales.
+                    {t.page.emptyAccountDesc}
                   </p>
                 </div>
                 <button
@@ -384,7 +352,7 @@ export default function Home() {
                   }}
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shrink-0 transition-colors"
                 >
-                  Registrar mi primer movimiento
+                  {t.page.firstMove}
                 </button>
               </div>
             )}
@@ -398,7 +366,7 @@ export default function Home() {
                 <OverviewCards
                   totals={totals}
                   healthScore={healthScore}
-                  periodLabel={activePeriod ? formatMonthES(activePeriod) : null}
+                  periodLabel={activePeriod ? formatMonthLabel(activePeriod, locale) : null}
                   previousExpense={previousPeriodTotals?.totalExpense ?? null}
                   onOpenAdvisor={() => setActiveTab('advisor')}
                 />
@@ -411,16 +379,16 @@ export default function Home() {
 
                 {recurring.length > 0 && (
                   <div className="glass-panel rounded-2xl p-5 border border-white/10">
-                    <h4 className="text-sm font-bold text-white">Posibles gastos recurrentes</h4>
+                    <h4 className="text-sm font-bold text-white">{t.page.recurringTitle}</h4>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Detectados por repetirse en varios meses. Revísalos antes de renovar.
+                      {t.page.recurringDesc}
                     </p>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {recurring.map((r) => (
                         <div key={r.name} className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
                           <p className="text-sm font-semibold text-white truncate">{r.name}</p>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            ~${r.avgAmount.toLocaleString('es-MX')} · {r.months} {r.months === 1 ? 'mes' : 'meses'} · {r.category}
+                            ~${r.avgAmount.toLocaleString(numLocale)} · {r.months} {r.months === 1 ? t.page.recurringMonthOne : t.page.recurringMonths} · {getCategoryLabel(r.category, t)}
                           </p>
                         </div>
                       ))}
@@ -436,7 +404,7 @@ export default function Home() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-white">
-                          Recomendación Financiera Activa: {smartAdvice[0].title}
+                          {t.page.recommendation} {smartAdvice[0].title}
                         </h4>
                         <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
                           {smartAdvice[0].description}
@@ -449,7 +417,7 @@ export default function Home() {
                       onClick={() => setActiveTab('advisor')}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 self-start sm:self-auto transition-colors"
                     >
-                      <span>Explorar Asesor de Ahorro</span>
+                      <span>{t.page.exploreAdvisor}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -457,13 +425,13 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-white">Movimientos Recientes</h3>
+                    <h3 className="text-base font-bold text-white">{t.page.recentMoves}</h3>
                     <button
                       type="button"
                       onClick={() => setActiveTab('transactions')}
                       className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                     >
-                      <span>Ver todas las transacciones</span>
+                      <span>{t.page.viewAll}</span>
                       <span>→</span>
                     </button>
                   </div>
@@ -532,7 +500,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-white">FinCheck</span>
             <span>•</span>
-            <span>Plataforma Inteligente de Finanzas Personales</span>
+            <span>{t.page.footerTagline}</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -540,7 +508,7 @@ export default function Home() {
               type="button"
               onClick={handleResetTour}
               className="hover:text-indigo-300 flex items-center gap-1.5 transition-colors"
-              title="Ver el recorrido guiado de nuevo"
+              title={t.page.footerTourTitle}
             >
               <GraduationCap className="w-3.5 h-3.5" />
               <span>{t.onboarding.howItWorks}</span>
@@ -552,7 +520,7 @@ export default function Home() {
               className="hover:text-emerald-400 flex items-center gap-1 transition-colors"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Mis datos y exportación</span>
+              <span>{t.page.footerData}</span>
             </button>
 
             {isDemoMode && (
@@ -562,10 +530,10 @@ export default function Home() {
                   type="button"
                   onClick={handleResetData}
                   className="hover:text-rose-400 flex items-center gap-1 transition-colors"
-                  title="Restaurar datos de demostración"
+                  title={t.page.footerResetTitle}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Restablecer demo</span>
+                  <span>{t.page.footerReset}</span>
                 </button>
               </>
             )}

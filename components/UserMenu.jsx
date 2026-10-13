@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LogOut, User as UserIcon, Database } from 'lucide-react';
 
 import { authClient } from '../lib/auth-client';
+import { useI18n } from '../lib/useI18n';
 
 function initialsFrom(name, email) {
   const source = (name ?? '').trim() || (email ?? '').trim();
@@ -14,6 +15,7 @@ function initialsFrom(name, email) {
 }
 
 export default function UserMenu({ user, onOpenBackendModal }) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const containerRef = useRef(null);
@@ -44,7 +46,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
     });
   };
 
-  const displayName = user?.name ?? user?.email ?? 'Cuenta';
+  const displayName = user?.name ?? user?.email ?? t.usermenu.fallbackAccount;
 
   return (
     <div className="relative" ref={containerRef}>
@@ -90,7 +92,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">
-                {user?.name ?? 'Usuario FinCheck'}
+                {user?.name ?? t.usermenu.fallbackUser}
               </p>
               <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
             </div>
@@ -99,7 +101,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
           <div className="pt-2 space-y-1">
             <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-slate-400">
               <UserIcon className="w-3.5 h-3.5" />
-              <span>Sesión gestionada por Better Auth</span>
+              <span>{t.usermenu.managed}</span>
             </div>
 
             <button
@@ -111,7 +113,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
               className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Mis datos y exportación</span>
+              <span>{t.usermenu.myData}</span>
             </button>
 
             <button
@@ -121,7 +123,7 @@ export default function UserMenu({ user, onOpenBackendModal }) {
               className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-rose-300 hover:bg-rose-500/10 transition-colors disabled:opacity-60"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>{isSigningOut ? 'Cerrando sesión...' : 'Cerrar sesión'}</span>
+              <span>{isSigningOut ? t.usermenu.signingOut : t.usermenu.signOut}</span>
             </button>
           </div>
         </div>

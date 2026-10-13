@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { INVESTMENT_STRATEGIES } from '../lib/constants';
 import { calculateCompoundInterest } from '../lib/financeCalculations';
+import { useI18n } from '../lib/useI18n';
 import {
   Sparkles,
   TrendingUp,
@@ -28,6 +29,7 @@ export default function FinancialAdvisor({
   // borrar el código. Para reactivar: pasar showInvesting={true} desde app/page.js.
   showInvesting = false,
 }) {
+  const { t } = useI18n();
   // Compound Interest Simulator state (prefilled from real surplus when available)
   const suggestedInitial = Math.max(0, Math.round(totals?.netBalance ?? 0));
   const suggestedMonthly = Math.max(0, Math.round(Math.max(totals?.netBalance ?? 0, (totals?.totalIncome ?? 0) * 0.1)));
@@ -64,24 +66,23 @@ export default function FinancialAdvisor({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-white tracking-tight">Asesor Financiero</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight">{t.advisor.title}</h3>
               <span
-                title="Diagnóstico automático con reglas sobre tus números. Sin IA externa."
+                title={t.advisor.autoTitle}
                 className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
               >
-                Automático
+                {t.advisor.auto}
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Diagnóstico de tu estructura de gasto con reglas transparentes, recomendaciones y proyección de ahorro.
+              {t.advisor.desc}
             </p>
             <details className="mt-2 text-xs text-slate-400">
               <summary className="cursor-pointer text-indigo-300 hover:text-indigo-200">
-                ¿Cómo se calcula tu salud financiera?
+                {t.advisor.howTitle}
               </summary>
               <p className="mt-1 leading-relaxed">
-                Parte de 100 y resta por balance negativo o ahorro bajo, por cada categoría excedida
-                y por alertas preventivas. Mínimo 15. Sin IA: son reglas fijas sobre tu balance y presupuestos.
+                {t.advisor.howDetails}
               </p>
             </details>
           </div>
@@ -92,13 +93,13 @@ export default function FinancialAdvisor({
       <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-white/10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-800">
           <div>
-            <h4 className="text-base font-bold text-white">Estructura de Gastos: Regla 50 / 30 / 20</h4>
+            <h4 className="text-base font-bold text-white">{t.advisor.structureTitle}</h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              El estándar de oro para finanzas equilibradas y sostenibles en el tiempo.
+              {t.advisor.structureDesc}
             </p>
           </div>
           <span className="text-xs text-indigo-400 font-semibold">
-            Ingreso base considerado: ${totals.totalIncome.toLocaleString()}
+            {t.advisor.baseIncome} ${totals.totalIncome.toLocaleString()}
           </span>
         </div>
 
@@ -111,20 +112,20 @@ export default function FinancialAdvisor({
               : 'bg-slate-900/70 border-amber-500/30'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400">50% NECESIDADES</span>
+              <span className="text-xs font-bold text-slate-400">{t.advisor.needsLabel}</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 rule503020.needs.status === 'healthy'
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : 'bg-amber-500/20 text-amber-400'
               }`}>
-                {rule503020.needs.currentPct}% actual
+                {rule503020.needs.currentPct}% {t.advisor.actual}
               </span>
             </div>
             <p className="text-xl font-black text-white mt-2">
               ${rule503020.needs.spent.toLocaleString()}
             </p>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              Límite sugerido (50%): ${rule503020.needs.targetAmount.toLocaleString()}
+              {t.advisor.limitSuggested} ${rule503020.needs.targetAmount.toLocaleString()}
             </span>
 
             <div className="mt-3 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -136,7 +137,7 @@ export default function FinancialAdvisor({
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-2">
-              Vivienda, despensa, transporte, luz, agua, seguros y salud.
+              {t.advisor.needsDesc}
             </p>
           </div>
 
@@ -147,20 +148,20 @@ export default function FinancialAdvisor({
               : 'bg-slate-900/70 border-rose-500/30'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400">30% DESEOS & ESTILO</span>
+              <span className="text-xs font-bold text-slate-400">{t.advisor.wantsLabel}</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 rule503020.wants.status === 'healthy'
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : 'bg-rose-500/20 text-rose-400'
               }`}>
-                {rule503020.wants.currentPct}% actual
+                {rule503020.wants.currentPct}% {t.advisor.actual}
               </span>
             </div>
             <p className="text-xl font-black text-white mt-2">
               ${rule503020.wants.spent.toLocaleString()}
             </p>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              Tope sugerido (30%): ${rule503020.wants.targetAmount.toLocaleString()}
+              {t.advisor.capSuggested} ${rule503020.wants.targetAmount.toLocaleString()}
             </span>
 
             <div className="mt-3 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -172,7 +173,7 @@ export default function FinancialAdvisor({
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-2">
-              Salidas a restaurantes, ocio, viajes, compras personales y hobbies.
+              {t.advisor.wantsDesc}
             </p>
           </div>
 
@@ -183,20 +184,20 @@ export default function FinancialAdvisor({
               : 'bg-slate-900/70 border-amber-500/30'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400">20% AHORRO</span>
+              <span className="text-xs font-bold text-slate-400">{t.advisor.savingsLabel}</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 rule503020.savings.status === 'healthy'
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : 'bg-amber-500/20 text-amber-400'
               }`}>
-                {rule503020.savings.currentPct}% actual
+                {rule503020.savings.currentPct}% {t.advisor.actual}
               </span>
             </div>
             <p className="text-xl font-black text-emerald-400 mt-2">
               ${rule503020.savings.spent.toLocaleString()}
             </p>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              Meta mínima (20%): ${rule503020.savings.targetAmount.toLocaleString()}
+              {t.advisor.minGoal} ${rule503020.savings.targetAmount.toLocaleString()}
             </span>
 
             <div className="mt-3 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -208,7 +209,7 @@ export default function FinancialAdvisor({
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-2">
-              Fondo de emergencia y ahorro para tus metas.
+              {t.advisor.savingsDesc}
             </p>
           </div>
         </div>
@@ -218,7 +219,7 @@ export default function FinancialAdvisor({
       <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-white/10">
         <div className="flex items-center gap-2 mb-4">
           <Lightbulb className="w-5 h-5 text-amber-400" />
-          <h4 className="text-base font-bold text-white">Recomendaciones Clave de Optimización</h4>
+          <h4 className="text-base font-bold text-white">{t.advisor.keyTipsTitle}</h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

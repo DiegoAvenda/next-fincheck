@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { X, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+
+import { useI18n } from '../lib/useI18n';
 
 const TOUR_KEY = 'fincheck-tour-v2';
 
@@ -12,6 +14,37 @@ const TOUR_KEY = 'fincheck-tour-v2';
  * y posiciona el tooltip al lado. Sin el elemento: tooltip centrado (fallback).
  */
 
+const STEP_META = [
+  { id: 'welcome' },
+  { id: 'dashboard', tab: 'dashboard', target: 'overview-cards' },
+  { id: 'transactions', tab: 'transactions', target: 'nav-transactions' },
+  { id: 'budgets', tab: 'budgets', target: 'nav-budgets' },
+  { id: 'advisor', tab: 'advisor', target: 'nav-advisor' },
+  { id: 'add-transaction', tab: 'dashboard', target: 'add-transaction' },
+];
+
+const STEP_TEXT_KEYS = {
+  welcome: ['welcome', 'welcomeDesc', 'welcomeCta'],
+  dashboard: ['dashboard', 'dashboardDesc'],
+  transactions: ['transactions', 'transactionsDesc'],
+  budgets: ['budgets', 'budgetsDesc'],
+  advisor: ['advisor', 'advisorDesc'],
+  'add-transaction': ['add', 'addDesc'],
+};
+
+function buildSteps(t) {
+  return STEP_META.map((meta) => {
+    const keys = STEP_TEXT_KEYS[meta.id] || [];
+    return {
+      ...meta,
+      title: t?.tour?.[keys[0]] ?? meta.id,
+      description: t?.tour?.[keys[1]] ?? '',
+      ...(keys[2] ? { cta: t?.tour?.[keys[2]] } : {}),
+    };
+  });
+}
+
+// Fallback estático (primer render / SSR): se reemplaza por buildSteps(t) en cliente.
 const ONBOARDING_STEPS = [
   {
     id: 'welcome',
@@ -121,36 +154,38 @@ function placeTooltip(spot) {
 }
 
 export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
+  const { t } = useI18n();
+  const steps = useMemo(() => buildSteps(t), [t]);
   const [currentStep, setCurrentStep] = useState(() => {
     // ?tour=N abre directo en ese paso (útil para probar). Fuera de rango = 0.
     if (typeof window === 'undefined') return 0;
     try {
       const n = Number(new URLSearchParams(window.location.search).get('tour'));
-      if (Number.isInteger(n) && n >= 0 && n < ONBOARDING_STEPS.length) return n;
+      if (Number.isInteger(n) && n >= 0 && n < steps.length) return n;
     } catch {}
     return 0;
   });
   const [spot, setSpot] = useState(null);
   const [tooltip, setTooltip] = useState({ centered: true });
-  const step = ONBOARDING_STEPS[currentStep];
-  const isLast = currentStep === ONBOARDING_STEPS.length - 1;
+  const step = steps[currentStep];
+  const isLast = currentStep === steps.length - 1;
   const rafRef = useRef(0);
 
   const measure = useCallback(() => {
-    const rect = getSpotRect(ONBOARDING_STEPS[currentStep].target);
+    const rect = getSpotRect(steps[currentStep].target);
     setSpot(rect);
     setTooltip(placeTooltip(rect));
-  }, [currentStep]);
+  }, [currentStep, steps]);
 
   // Cambiar de pestaña al entrar al paso + medir tras el render.
   useEffect(() => {
-    const s = ONBOARDING_STEPS[currentStep];
+    const s = steps[currentStep];
     if (s.tab && onGoToTab) onGoToTab(s.tab);
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = requestAnimationFrame(measure);
     });
     return () => cancelAnimationFrame(rafRef.current);
-  }, [currentStep, measure, onGoToTab]);
+  }, [currentStep, measure, onGoToTab, steps]);
 
   // Scroll al objetivo + re-medir en resize/scroll.
   useLayoutEffect(() => {
@@ -176,12 +211,12 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') onSkip?.();
-      if (e.key === 'ArrowRight') setCurrentStep((c) => Math.min(c + 1, ONBOARDING_STEPS.length - 1));
+      if (e.key === 'ArrowRight') setCurrentStep((c) => Math.min(c + 1, steps.length - 1));
       if (e.key === 'ArrowLeft') setCurrentStep((c) => Math.max(c - 1, 0));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSkip]);
+  }, [onSkip, steps.length]);
 
   const handleNext = () => {
     if (!isLast) {
@@ -241,14 +276,14 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
           <button
             type="button"
             onClick={onSkip}
-            aria-label="Cerrar tour"
+            aria-label={t.tour.closeTour}
             className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
 
           <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
-            Paso {currentStep + 1} de {ONBOARDING_STEPS.length}
+            {t.tour.stepOf} {currentStep + 1} {t.tour.ofWord} {steps.length}
           </p>
           <h3 className="text-base font-bold text-white mt-1 pr-6">{step.title}</h3>
           <p className="text-sm text-slate-300 mt-2 leading-relaxed">{step.description}</p>
@@ -257,11 +292,11 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
           )}
 
           <div className="flex items-center gap-1.5 mt-4 mb-4">
-            {ONBOARDING_STEPS.map((s, i) => (
+            {steps.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
-                aria-label={`Ir al paso ${i + 1}: ${s.title}`}
+                aria-label={`${t.tour.goStep} ${i + 1}: ${s.title}`}
                 onClick={() => setCurrentStep(i)}
                 className={`h-1.5 rounded-full transition-all ${
                   i === currentStep ? 'w-6 bg-indigo-400' : 'w-1.5 bg-slate-700 hover:bg-slate-600'
@@ -277,7 +312,7 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
             onClick={onSkip}
             className="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
-            Omitir
+            {t.tour.skip}
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -287,7 +322,7 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-              Anterior
+              {t.tour.prev}
             </button>
             <button
               type="button"
@@ -297,11 +332,11 @@ export default function OnboardingTour({ onComplete, onSkip, onGoToTab }) {
               {isLast ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>Comenzar</span>
+                  <span>{t.tour.start}</span>
                 </>
               ) : (
                 <>
-                  <span>Siguiente</span>
+                  <span>{t.tour.next}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </>
               )}
